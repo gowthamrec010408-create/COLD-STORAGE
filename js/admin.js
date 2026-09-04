@@ -33,6 +33,17 @@ class AdminControlCenter {
       await initializeFirebase();
       await firebaseService.getUsers();
       this.render();
+
+      // Real-time Cloud Database listener for user registrations from mobile phones
+      authService.subscribeUsers((users) => {
+        const currentUsers = authService.getUsers();
+        const oldPending = currentUsers.filter(u => u.status === 'pending').length;
+        const newPending = users.filter(u => u.status === 'pending').length;
+        if (newPending > oldPending) {
+          showToast(`🔔 New Farmer Registration Pending Approval (${newPending} total)`, 'warning');
+        }
+        this.render();
+      });
     } catch (e) {
       console.warn('Admin Firestore sync warning:', e);
     }
@@ -114,22 +125,28 @@ class AdminControlCenter {
                            this.userFilter === 'rejected' ? rejectedUsers : allUsers;
 
     return `
-      <!-- User Sub-Filter Tabs -->
-      <div class="flex flex-wrap gap-2 mb-4">
-        <button class="admin-tab-btn ${this.userFilter === 'pending' ? 'active' : ''}" data-subtab="pending">
-          Pending Verification (${pendingUsers.length})
-        </button>
-        <button class="admin-tab-btn ${this.userFilter === 'approved' ? 'active' : ''}" data-subtab="approved">
-          Approved Accounts (${approvedUsers.length})
-        </button>
-        <button class="admin-tab-btn ${this.userFilter === 'rejected' ? 'active' : ''}" data-subtab="rejected">
-          Rejected / Disabled (${rejectedUsers.length})
-        </button>
-        <button class="admin-tab-btn ${this.userFilter === 'all' ? 'active' : ''}" data-subtab="all">
-          All Users (${allUsers.length})
-        </button>
-        <button class="admin-tab-btn ${this.userFilter === 'audit' ? 'active' : ''}" data-subtab="audit">
-          Audit Logs (${auditLogs.length})
+      <!-- User Sub-Filter Tabs & Database Sync -->
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div class="flex flex-wrap gap-2">
+          <button class="admin-tab-btn ${this.userFilter === 'pending' ? 'active' : ''}" data-subtab="pending">
+            Pending Verification (${pendingUsers.length})
+          </button>
+          <button class="admin-tab-btn ${this.userFilter === 'approved' ? 'active' : ''}" data-subtab="approved">
+            Approved Accounts (${approvedUsers.length})
+          </button>
+          <button class="admin-tab-btn ${this.userFilter === 'rejected' ? 'active' : ''}" data-subtab="rejected">
+            Rejected / Disabled (${rejectedUsers.length})
+          </button>
+          <button class="admin-tab-btn ${this.userFilter === 'all' ? 'active' : ''}" data-subtab="all">
+            All Users (${allUsers.length})
+          </button>
+          <button class="admin-tab-btn ${this.userFilter === 'audit' ? 'active' : ''}" data-subtab="audit">
+            Audit Logs (${auditLogs.length})
+          </button>
+        </div>
+
+        <button class="btn btn-2xs btn-outline" id="btn-admin-sync-cloud" title="Fetch fresh records from Cloud Firestore & Realtime Database">
+          <i data-lucide="cloud-download" class="icon-2xs text-cyan"></i> Force Sync with Cloud
         </button>
       </div>
 
@@ -666,6 +683,24 @@ class AdminControlCenter {
       };
     });
 
+    // Sync from Cloud Database
+    const syncBtn = document.getElementById('btn-admin-sync-cloud');
+    if (syncBtn) {
+      syncBtn.onclick = async () => {
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '<span class="pulse-dot"></span> Syncing Cloud DB...';
+        try {
+          const freshUsers = await authService.syncWithCloudDatabase();
+          showToast(`✅ Synced ${freshUsers.length} user records from Cloud Database.`, 'success');
+          this.render();
+        } catch (err) {
+          showToast('Sync error: ' + err.message, 'error');
+        } finally {
+          syncBtn.disabled = false;
+        }
+      };
+    }
+
     // 3. User Approval Actions
     document.querySelectorAll('.approve-user-btn').forEach(btn => {
       btn.onclick = async () => {
@@ -673,7 +708,7 @@ class AdminControlCenter {
         btn.disabled = true;
         try {
           await authService.updateUserStatus(uid, 'approved');
-          showToast('User approved successfully. Synced to Cloud Firestore.', 'success');
+          showToast('✅ User approved & synced to Cloud Firestore & Realtime DB.', 'success');
           this.render();
         } catch (e) {
           alert('Approval error: ' + e.message);
@@ -688,7 +723,7 @@ class AdminControlCenter {
         btn.disabled = true;
         try {
           await authService.updateUserStatus(uid, 'rejected');
-          showToast('User account rejected and updated in Firestore.', 'error');
+          showToast('User account rejected and updated in Cloud Database.', 'error');
           this.render();
         } catch (e) {
           alert('Rejection error: ' + e.message);
@@ -703,7 +738,7 @@ class AdminControlCenter {
         if (confirm('Disable this user account?')) {
           btn.disabled = true;
           await authService.updateUserStatus(uid, 'disabled');
-          showToast('User account disabled in Cloud Firestore.', 'normal');
+          showToast('User account disabled in Cloud Database.', 'normal');
           this.render();
         }
       };

@@ -1,7 +1,7 @@
 /**
  * QORA TECH — Solar Smart Cold Storage
  * Unified Authentication & Access Control Service
- * Handles user login, registration, admin auth, role gating, and Cloud Firestore user sync.
+ * Handles user login, registration, admin auth, role gating, and Cloud Database live sync.
  */
 
 import { store } from './core/state.js';
@@ -108,18 +108,31 @@ export class AuthService {
         }
       }
 
-      // Sync with Cloud Firestore in background
+      // Sync with Cloud Database in background
       setTimeout(async () => {
         try {
-          await initializeFirebase();
-          if (fb.isLive) {
-            await firebaseService.getUsers();
-          }
+          await this.syncWithCloudDatabase();
         } catch (e) {}
-      }, 500);
+      }, 300);
     } catch (e) {
       console.warn('Could not initialize user store:', e);
     }
+  }
+
+  /**
+   * Sync local user registry with Cloud Firestore and Realtime Database
+   */
+  async syncWithCloudDatabase() {
+    try {
+      await initializeFirebase();
+      if (fb.isLive) {
+        const cloudUsers = await firebaseService.getUsers();
+        return cloudUsers;
+      }
+    } catch (e) {
+      console.warn('Cloud database sync warning:', e);
+    }
+    return this.getUsers();
   }
 
   getUsers() {
@@ -142,12 +155,19 @@ export class AuthService {
   }
 
   /**
-   * Login standard user by Email ID (also accepts Phone Number or User ID)
+   * Login standard user by Email ID or Phone Number
+   * Fetches the latest database record to ensure instant recognition of admin approvals across all devices.
    */
   async loginUser(identifier, password) {
     const rawId = (identifier || '').trim();
     const cleanPass = (password || '').trim();
-    const users = this.getUsers();
+
+    // 1. Fetch freshest user data from Cloud Database before verifying
+    let users = this.getUsers();
+    try {
+      users = await this.syncWithCloudDatabase();
+    } catch (e) {}
+
     let user = null;
 
     if (rawId.includes('@')) {
@@ -175,7 +195,11 @@ export class AuthService {
   async loginAdmin(identifier, password) {
     const cleanId = (identifier || '').trim().toLowerCase();
     const cleanPass = (password || '').trim();
-    const users = this.getUsers();
+
+    let users = this.getUsers();
+    try {
+      users = await this.syncWithCloudDatabase();
+    } catch (e) {}
     
     const user = users.find(u => 
       ((u.email || '').toLowerCase() === cleanId || 
@@ -202,7 +226,7 @@ export class AuthService {
       throw err;
     }
     if (user.status === 'rejected') {
-      const err = new Error('ACCOUNT REJECTED: Please contact the administrator.');
+      const err = new Error('ACCOUNT REJECTED: Your account registration was not approved. Please contact the administrator.');
       err.code = 'ACCOUNT_REJECTED';
       throw err;
     }
@@ -239,7 +263,7 @@ export class AuthService {
   }
 
   /**
-   * Create account registration with status = "pending" and save to Firestore
+   * Create account registration with status = "pending" and save to BOTH Cloud Firestore & RTDB
    */
   async register(formData) {
     const {
@@ -273,7 +297,12 @@ export class AuthService {
 
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
     const cleanEmail = (email || `${cleanPhone}@qoratech.local`).trim().toLowerCase();
-    const users = this.getUsers();
+
+    // Fetch latest users to check duplicates
+    let users = this.getUsers();
+    try {
+      users = await this.syncWithCloudDatabase();
+    } catch (e) {}
 
     if (users.some(u => (u.email || '').toLowerCase() === cleanEmail)) {
       throw new Error('An account with this Email ID already exists.');
@@ -304,8 +333,17 @@ export class AuthService {
       createdAt: new Date().toISOString()
     };
 
-    // Save to local cache & Cloud Firestore
+    // 1. Persist to Cloud Database (Firestore + Realtime DB) and LocalStorage
     await firebaseService.saveUser(newUser);
+
+    // 2. Record registration audit trail in Cloud Database
+    await firebaseService.saveAuditLog({
+      action: 'USER_REGISTERED_PENDING',
+      targetUser: newUser.displayName,
+      targetUid: newUser.uid,
+      admin: 'SYSTEM_GATEWAY',
+      timestamp: new Date().toISOString()
+    });
 
     return {
       success: true,
@@ -353,7 +391,7 @@ export class AuthService {
   }
 
   /**
-   * Route Guard for normal authenticated user pages
+   * Route Guard for standard authenticated user pages
    */
   requireAuth() {
     const user = this.getCurrentUser();
@@ -387,13 +425,17 @@ export class AuthService {
   }
 
   /**
-   * Admin Approval Actions (Updates Firestore + LocalStorage + Audit Logs)
+   * Admin Approval Actions (Updates Cloud Firestore + Realtime DB + LocalStorage + Audit Logs)
    */
   async updateUserStatus(uid, newStatus) {
     const currentUser = this.requireAdmin();
     if (!currentUser) return null;
 
-    const users = this.getUsers();
+    let users = this.getUsers();
+    try {
+      users = await this.syncWithCloudDatabase();
+    } catch (e) {}
+
     const index = users.findIndex(u => u.uid === uid);
     if (index === -1) throw new Error('User not found.');
 
@@ -401,12 +443,11 @@ export class AuthService {
       throw new Error('Primary root administrator cannot be modified.');
     }
 
-    // 1. Update status in Cloud Firestore & LocalStorage
+    // 1. Update status in Cloud Firestore & Realtime DB & LocalStorage
     await firebaseService.updateUserStatus(uid, newStatus);
 
-    // 2. Record audit log in Cloud Firestore & LocalStorage
+    // 2. Record audit log in Cloud Database
     await firebaseService.saveAuditLog({
-      id: `AUDIT-${Date.now()}`,
       action: `USER_STATUS_${newStatus.toUpperCase()}`,
       targetUser: users[index].displayName,
       targetUid: uid,
@@ -417,6 +458,20 @@ export class AuthService {
     users[index].status = newStatus;
     users[index].statusUpdatedAt = new Date().toISOString();
     return users[index];
+  }
+
+  /**
+   * Subscribe to real-time status change of a specific user (for pending.html auto-approval)
+   */
+  subscribeUserStatus(uid, callback) {
+    return firebaseService.subscribeUserStatus(uid, callback);
+  }
+
+  /**
+   * Subscribe to real-time user registry updates (for Admin Control Center)
+   */
+  subscribeUsers(callback) {
+    return firebaseService.subscribeUsers(callback);
   }
 }
 

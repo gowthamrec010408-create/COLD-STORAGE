@@ -1,8 +1,8 @@
 /**
- * Solar Smart Cold Storage — Firebase Service Layer
- * Realtime Database synchronization under /live/storageUnit01/ and
- * Cloud Firestore collections: produceBatches, users, sensorCalibration, auditLogs, diagnostics.
- * Includes automatic offline caching with localStorage and two-way sync.
+ * Solar Smart Cold Storage — Unified Cloud Database Service Layer
+ * Dual-Sync Engine: Synchronizes all user registrations, approvals, produce batches,
+ * sensor calibrations, audit logs, and hardware telemetry across BOTH
+ * Cloud Firestore and Firebase Realtime Database (RTDB) with offline-first localStorage fallback.
  */
 
 import { fb } from '../config/firebase-config.js';
@@ -64,10 +64,8 @@ export class FirebaseService {
         }
       });
 
-      this.rtdbListeners = [
-        () => off(liveRef, 'value', unsubLive),
-        () => off(zonesRef, 'value', unsubZones)
-      ];
+      this.rtdbListeners.push(() => off(liveRef, 'value', unsubLive));
+      this.rtdbListeners.push(() => off(zonesRef, 'value', unsubZones));
 
       this.isListening = true;
       store.set('firebaseConnected', true);
@@ -115,11 +113,323 @@ export class FirebaseService {
   }
 
   // ==========================================================================
-  // 2. CLOUD FIRESTORE — PRODUCE BATCHES CRUD & REAL-TIME SYNC
+  // 2. USER MANAGEMENT & APPROVAL STATUS (DUAL SYNC: FIRESTORE + RTDB)
   // ==========================================================================
 
   /**
-   * Save or Update a Produce Batch in Cloud Firestore + LocalStorage Cache
+   * Save User Profile to BOTH Cloud Firestore & Firebase Realtime Database + LocalStorage
+   */
+  async saveUser(userData) {
+    if (!userData || !userData.uid) return false;
+
+    const timestamp = new Date().toISOString();
+    const cleanUser = {
+      ...userData,
+      updatedAt: timestamp
+    };
+
+    // 1. Immediately cache locally
+    try {
+      const stored = localStorage.getItem(USERS_CACHE_KEY);
+      let users = stored ? JSON.parse(stored) : [];
+      const idx = users.findIndex(u => u.uid === cleanUser.uid || (u.email && u.email.toLowerCase() === (cleanUser.email || '').toLowerCase()));
+      if (idx >= 0) {
+        users[idx] = { ...users[idx], ...cleanUser };
+      } else {
+        users.push(cleanUser);
+      }
+      localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(users));
+    } catch (e) {
+      console.warn('Error saving user to local cache:', e);
+    }
+
+    let savedCloud = false;
+
+    // 2. Persist to Cloud Firestore
+    if (fb.isLive && fb.firestore) {
+      try {
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+        const userRef = doc(fb.firestore, 'users', cleanUser.uid);
+        await setDoc(userRef, cleanUser, { merge: true });
+        console.log(`☁️ [Firestore] User ${cleanUser.uid} (${cleanUser.displayName || cleanUser.email}) saved.`);
+        savedCloud = true;
+      } catch (err) {
+        console.warn(`⚠️ Cloud Firestore save failed for user ${cleanUser.uid}:`, err);
+      }
+    }
+
+    // 3. Persist to Firebase Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const rtdbUserRef = ref(fb.rtdb, `users/${cleanUser.uid}`);
+        await set(rtdbUserRef, cleanUser);
+
+        // If status is pending, also mirror under pendingUsers for quick indexed lookup
+        if (cleanUser.status === 'pending') {
+          const pendingRef = ref(fb.rtdb, `pendingUsers/${cleanUser.uid}`);
+          await set(pendingRef, {
+            uid: cleanUser.uid,
+            displayName: cleanUser.displayName,
+            email: cleanUser.email,
+            phone: cleanUser.phone,
+            nerState: cleanUser.nerState || 'Assam',
+            createdAt: cleanUser.createdAt || timestamp
+          });
+        }
+        console.log(`☁️ [Realtime DB] User ${cleanUser.uid} saved successfully.`);
+        savedCloud = true;
+      } catch (err) {
+        console.warn(`⚠️ Realtime Database save failed for user ${cleanUser.uid}:`, err);
+      }
+    }
+
+    return savedCloud || true;
+  }
+
+  /**
+   * Fetch all users from Cloud Firestore and Realtime Database (with local cache fallback)
+   */
+  async getUsers() {
+    let localUsers = [];
+    try {
+      const stored = localStorage.getItem(USERS_CACHE_KEY);
+      if (stored) localUsers = JSON.parse(stored);
+    } catch (e) {}
+
+    const userMap = new Map();
+    localUsers.forEach(u => {
+      if (u.uid) userMap.set(u.uid, u);
+    });
+
+    let fetchedFromCloud = false;
+
+    // 1. Fetch from Cloud Firestore
+    if (fb.isLive && fb.firestore) {
+      try {
+        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+        const colRef = collection(fb.firestore, 'users');
+        const snapshot = await getDocs(colRef);
+        
+        if (!snapshot.empty) {
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const uid = doc.id || data.uid;
+            userMap.set(uid, { uid, ...data });
+          });
+          fetchedFromCloud = true;
+          console.log(`✅ [Firestore] Loaded users from Cloud Firestore.`);
+        }
+      } catch (err) {
+        console.warn('⚠️ Error fetching users from Cloud Firestore:', err);
+      }
+    }
+
+    // 2. Fetch from Firebase Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const usersRef = ref(fb.rtdb, 'users');
+        const snapshot = await get(usersRef);
+
+        if (snapshot.exists()) {
+          const val = snapshot.val();
+          Object.keys(val).forEach(k => {
+            const u = val[k];
+            if (u && (u.uid || k)) {
+              const uid = u.uid || k;
+              const existing = userMap.get(uid);
+              // Merge, preferring newer status if available
+              userMap.set(uid, { ...existing, ...u, uid });
+            }
+          });
+          fetchedFromCloud = true;
+          console.log(`✅ [Realtime DB] Loaded users from Realtime Database.`);
+        }
+      } catch (err) {
+        console.warn('⚠️ Error fetching users from Realtime Database:', err);
+      }
+    }
+
+    const mergedUsers = Array.from(userMap.values());
+    if (mergedUsers.length > 0) {
+      try {
+        localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(mergedUsers));
+      } catch (e) {}
+    }
+
+    // If cloud database was empty but local has users, seed them to cloud database
+    if (!fetchedFromCloud && localUsers.length > 0 && fb.isLive) {
+      for (const u of localUsers) {
+        this.saveUser(u).catch(() => {});
+      }
+    }
+
+    return mergedUsers.length > 0 ? mergedUsers : localUsers;
+  }
+
+  /**
+   * Update User Status (approved, rejected, pending, disabled) in BOTH Cloud Databases
+   */
+  async updateUserStatus(uid, newStatus) {
+    const timestamp = new Date().toISOString();
+
+    // 1. Update local cache
+    try {
+      const stored = localStorage.getItem(USERS_CACHE_KEY);
+      if (stored) {
+        const users = JSON.parse(stored);
+        const idx = users.findIndex(u => u.uid === uid);
+        if (idx >= 0) {
+          users[idx].status = newStatus;
+          users[idx].statusUpdatedAt = timestamp;
+          users[idx].updatedAt = timestamp;
+          localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(users));
+        }
+      }
+    } catch (e) {}
+
+    // 2. Update Firestore document
+    if (fb.isLive && fb.firestore) {
+      try {
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+        const userRef = doc(fb.firestore, 'users', uid);
+        await setDoc(userRef, {
+          status: newStatus,
+          statusUpdatedAt: timestamp,
+          updatedAt: timestamp
+        }, { merge: true });
+        console.log(`☁️ [Firestore] User ${uid} status updated to '${newStatus}'.`);
+      } catch (err) {
+        console.warn(`⚠️ Error updating user status in Firestore:`, err);
+      }
+    }
+
+    // 3. Update Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, update, remove } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const rtdbUserRef = ref(fb.rtdb, `users/${uid}`);
+        await update(rtdbUserRef, {
+          status: newStatus,
+          statusUpdatedAt: timestamp,
+          updatedAt: timestamp
+        });
+
+        // If no longer pending, remove from pendingUsers node
+        if (newStatus !== 'pending') {
+          const pendingRef = ref(fb.rtdb, `pendingUsers/${uid}`);
+          await remove(pendingRef).catch(() => {});
+        }
+        console.log(`☁️ [Realtime DB] User ${uid} status updated to '${newStatus}'.`);
+      } catch (err) {
+        console.warn(`⚠️ Error updating user status in RTDB:`, err);
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Realtime Listener for All Users across Firestore & Realtime Database
+   */
+  async subscribeUsers(callback) {
+    let unsubs = [];
+
+    // 1. Subscribe to Firestore users collection
+    if (fb.isLive && fb.firestore) {
+      try {
+        const { collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+        const colRef = collection(fb.firestore, 'users');
+        const unsub = onSnapshot(colRef, (snapshot) => {
+          if (!snapshot.empty) {
+            const users = [];
+            snapshot.forEach(doc => users.push({ uid: doc.id, ...doc.data() }));
+            localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(users));
+            if (callback) callback(users);
+          }
+        }, (err) => {
+          console.warn('Firestore users subscription notice:', err);
+        });
+        unsubs.push(unsub);
+        this.firestoreListeners.push(unsub);
+      } catch (e) {}
+    }
+
+    // 2. Subscribe to Realtime Database users node
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const usersRef = ref(fb.rtdb, 'users');
+        const unsub = onValue(usersRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const val = snapshot.val();
+            const users = Object.keys(val).map(k => ({ uid: k, ...val[k] }));
+            localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(users));
+            if (callback) callback(users);
+          }
+        }, (err) => {
+          console.warn('RTDB users subscription notice:', err);
+        });
+        unsubs.push(() => off(usersRef, 'value', unsub));
+        this.rtdbListeners.push(() => off(usersRef, 'value', unsub));
+      } catch (e) {}
+    }
+
+    return () => {
+      unsubs.forEach(fn => { try { fn(); } catch (e) {} });
+    };
+  }
+
+  /**
+   * Realtime Listener for a Single User's Status (Used on pending.html on Phone)
+   */
+  async subscribeUserStatus(uid, callback) {
+    let unsubs = [];
+
+    if (!uid) return () => {};
+
+    // 1. Subscribe to RTDB single user
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const userRef = ref(fb.rtdb, `users/${uid}`);
+        const unsub = onValue(userRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const user = snapshot.val();
+            if (callback) callback(user);
+          }
+        });
+        unsubs.push(() => off(userRef, 'value', unsub));
+      } catch (e) {}
+    }
+
+    // 2. Subscribe to Firestore single user
+    if (fb.isLive && fb.firestore) {
+      try {
+        const { doc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+        const userDocRef = doc(fb.firestore, 'users', uid);
+        const unsub = onSnapshot(userDocRef, (snap) => {
+          if (snap.exists()) {
+            const user = snap.data();
+            if (callback) callback({ uid, ...user });
+          }
+        });
+        unsubs.push(unsub);
+      } catch (e) {}
+    }
+
+    return () => {
+      unsubs.forEach(fn => { try { fn(); } catch (e) {} });
+    };
+  }
+
+  // ==========================================================================
+  // 3. PRODUCE BATCHES CRUD & REAL-TIME SYNC (FIRESTORE + RTDB)
+  // ==========================================================================
+
+  /**
+   * Save or Update a Produce Batch in Cloud Firestore + Realtime Database + LocalStorage
    */
   async saveProduceBatch(batchData) {
     const batchId = batchData.id || `BATCH-${Date.now().toString().slice(-6)}`;
@@ -129,7 +439,7 @@ export class FirebaseService {
       updatedAt: new Date().toISOString()
     };
 
-    // 1. Immediately update in-memory state and localStorage cache
+    // 1. Update in-memory state & localStorage
     const currentBatches = this.getCachedBatches();
     const existingIdx = currentBatches.findIndex(b => b.id === batchId);
     let updatedBatches;
@@ -142,15 +452,27 @@ export class FirebaseService {
     this.setCachedBatches(updatedBatches);
     store.set('batches', updatedBatches);
 
-    // 2. Persist to Cloud Firestore if connected
+    // 2. Persist to Cloud Firestore
     if (fb.isLive && fb.firestore) {
       try {
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
         const docRef = doc(fb.firestore, 'produceBatches', batchId);
         await setDoc(docRef, cleanBatch, { merge: true });
-        console.log(`☁️ Batch ${batchId} synced to Cloud Firestore.`);
+        console.log(`☁️ [Firestore] Batch ${batchId} synced.`);
       } catch (err) {
-        console.warn(`⚠️ Cloud Firestore save failed for batch ${batchId}, saved locally:`, err);
+        console.warn(`⚠️ Cloud Firestore save failed for batch ${batchId}:`, err);
+      }
+    }
+
+    // 3. Persist to Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const batchRef = ref(fb.rtdb, `produceBatches/${batchId}`);
+        await set(batchRef, cleanBatch);
+        console.log(`☁️ [Realtime DB] Batch ${batchId} synced.`);
+      } catch (err) {
+        console.warn(`⚠️ RTDB save failed for batch ${batchId}:`, err);
       }
     }
 
@@ -158,7 +480,7 @@ export class FirebaseService {
   }
 
   /**
-   * Delete a Produce Batch from Cloud Firestore + LocalStorage
+   * Delete a Produce Batch from Cloud Firestore + Realtime Database + LocalStorage
    */
   async deleteProduceBatch(batchId) {
     // 1. Update local cache & store
@@ -173,9 +495,21 @@ export class FirebaseService {
         const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
         const docRef = doc(fb.firestore, 'produceBatches', batchId);
         await deleteDoc(docRef);
-        console.log(`🗑️ Batch ${batchId} deleted from Cloud Firestore.`);
+        console.log(`🗑️ [Firestore] Batch ${batchId} deleted.`);
       } catch (err) {
         console.warn(`⚠️ Cloud Firestore delete failed for ${batchId}:`, err);
+      }
+    }
+
+    // 3. Delete from Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const batchRef = ref(fb.rtdb, `produceBatches/${batchId}`);
+        await remove(batchRef);
+        console.log(`🗑️ [Realtime DB] Batch ${batchId} deleted.`);
+      } catch (err) {
+        console.warn(`⚠️ RTDB delete failed for ${batchId}:`, err);
       }
     }
 
@@ -183,11 +517,15 @@ export class FirebaseService {
   }
 
   /**
-   * Fetch all produce batches from Cloud Firestore (falls back to local cache)
+   * Fetch all produce batches from Cloud Firestore / RTDB (falls back to local cache)
    */
   async getProduceBatches() {
     let batches = this.getCachedBatches();
+    const batchMap = new Map();
+    batches.forEach(b => batchMap.set(b.id, b));
+    let fetched = false;
 
+    // 1. Try Firestore
     if (fb.isLive && fb.firestore) {
       try {
         const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
@@ -195,21 +533,44 @@ export class FirebaseService {
         const snapshot = await getDocs(colRef);
         
         if (!snapshot.empty) {
-          const firestoreBatches = [];
-          snapshot.forEach(doc => firestoreBatches.push({ id: doc.id, ...doc.data() }));
-          batches = firestoreBatches;
-          this.setCachedBatches(batches);
-          store.set('batches', batches);
-          console.log(`✅ Loaded ${batches.length} batches from Cloud Firestore.`);
-        } else if (batches.length > 0) {
-          // Push initial default batches to Firestore so cloud database is populated
-          console.log(`ℹ️ Firestore produceBatches collection empty. Seeding initial batches to cloud...`);
-          for (const b of batches) {
-            await this.saveProduceBatch(b);
-          }
+          snapshot.forEach(doc => {
+            batchMap.set(doc.id, { id: doc.id, ...doc.data() });
+          });
+          fetched = true;
         }
       } catch (err) {
-        console.warn('⚠️ Could not fetch batches from Cloud Firestore, using local cache:', err);
+        console.warn('⚠️ Error fetching batches from Firestore:', err);
+      }
+    }
+
+    // 2. Try Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const rtdbRef = ref(fb.rtdb, 'produceBatches');
+        const snap = await get(rtdbRef);
+        if (snap.exists()) {
+          const val = snap.val();
+          Object.keys(val).forEach(k => {
+            batchMap.set(k, { id: k, ...val[k] });
+          });
+          fetched = true;
+        }
+      } catch (err) {
+        console.warn('⚠️ Error fetching batches from RTDB:', err);
+      }
+    }
+
+    const mergedBatches = Array.from(batchMap.values());
+    if (mergedBatches.length > 0) {
+      batches = mergedBatches;
+      this.setCachedBatches(batches);
+    }
+
+    // Seed to cloud if cloud was empty
+    if (!fetched && batches.length > 0 && fb.isLive) {
+      for (const b of batches) {
+        this.saveProduceBatch(b).catch(() => {});
       }
     }
 
@@ -218,33 +579,54 @@ export class FirebaseService {
   }
 
   /**
-   * Realtime Listener for Produce Batches from Cloud Firestore
+   * Realtime Listener for Produce Batches from Cloud Firestore & RTDB
    */
   async subscribeProduceBatches(callback) {
-    if (!fb.isLive || !fb.firestore) return null;
+    let unsubs = [];
 
-    try {
-      const { collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-      const colRef = collection(fb.firestore, 'produceBatches');
-      
-      const unsub = onSnapshot(colRef, (snapshot) => {
-        if (!snapshot.empty) {
-          const batches = [];
-          snapshot.forEach(doc => batches.push({ id: doc.id, ...doc.data() }));
-          this.setCachedBatches(batches);
-          store.set('batches', batches);
-          if (callback) callback(batches);
-        }
-      }, (err) => {
-        console.warn('Firestore produceBatches listener error:', err);
-      });
+    if (fb.isLive && fb.firestore) {
+      try {
+        const { collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+        const colRef = collection(fb.firestore, 'produceBatches');
+        
+        const unsub = onSnapshot(colRef, (snapshot) => {
+          if (!snapshot.empty) {
+            const batches = [];
+            snapshot.forEach(doc => batches.push({ id: doc.id, ...doc.data() }));
+            this.setCachedBatches(batches);
+            store.set('batches', batches);
+            if (callback) callback(batches);
+          }
+        }, (err) => {
+          console.warn('Firestore produceBatches listener error:', err);
+        });
 
-      this.firestoreListeners.push(unsub);
-      return unsub;
-    } catch (err) {
-      console.warn('Could not initialize Firestore produceBatches subscription:', err);
-      return null;
+        unsubs.push(unsub);
+        this.firestoreListeners.push(unsub);
+      } catch (err) {}
     }
+
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, onValue, off } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const batchesRef = ref(fb.rtdb, 'produceBatches');
+        const unsub = onValue(batchesRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const val = snapshot.val();
+            const batches = Object.keys(val).map(k => ({ id: k, ...val[k] }));
+            this.setCachedBatches(batches);
+            store.set('batches', batches);
+            if (callback) callback(batches);
+          }
+        });
+        unsubs.push(() => off(batchesRef, 'value', unsub));
+        this.rtdbListeners.push(() => off(batchesRef, 'value', unsub));
+      } catch (err) {}
+    }
+
+    return () => {
+      unsubs.forEach(fn => { try { fn(); } catch (e) {} });
+    };
   }
 
   getCachedBatches() {
@@ -262,128 +644,11 @@ export class FirebaseService {
   }
 
   // ==========================================================================
-  // 3. CLOUD FIRESTORE — USER MANAGEMENT & APPROVAL STATUS
+  // 4. SENSOR CALIBRATION REGISTRY (FIRESTORE + RTDB)
   // ==========================================================================
 
   /**
-   * Save User Profile to Cloud Firestore + LocalStorage
-   */
-  async saveUser(userData) {
-    if (!userData || !userData.uid) return false;
-
-    // 1. Update localStorage
-    try {
-      const stored = localStorage.getItem(USERS_CACHE_KEY);
-      let users = stored ? JSON.parse(stored) : [];
-      const idx = users.findIndex(u => u.uid === userData.uid || (u.email && u.email.toLowerCase() === (userData.email || '').toLowerCase()));
-      if (idx >= 0) {
-        users[idx] = { ...users[idx], ...userData, updatedAt: new Date().toISOString() };
-      } else {
-        users.push({ ...userData, updatedAt: new Date().toISOString() });
-      }
-      localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(users));
-    } catch (e) {
-      console.warn('Error saving user to local cache:', e);
-    }
-
-    // 2. Persist to Cloud Firestore
-    if (fb.isLive && fb.firestore) {
-      try {
-        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-        const userRef = doc(fb.firestore, 'users', userData.uid);
-        await setDoc(userRef, {
-          ...userData,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-        console.log(`☁️ User ${userData.uid} (${userData.displayName || userData.email}) saved to Cloud Firestore.`);
-      } catch (err) {
-        console.warn(`⚠️ Cloud Firestore save failed for user ${userData.uid}:`, err);
-      }
-    }
-
-    return true;
-  }
-
-  /**
-   * Fetch all users from Cloud Firestore (with local cache fallback)
-   */
-  async getUsers() {
-    let localUsers = [];
-    try {
-      const stored = localStorage.getItem(USERS_CACHE_KEY);
-      if (stored) localUsers = JSON.parse(stored);
-    } catch (e) {}
-
-    if (fb.isLive && fb.firestore) {
-      try {
-        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-        const colRef = collection(fb.firestore, 'users');
-        const snapshot = await getDocs(colRef);
-        
-        if (!snapshot.empty) {
-          const firestoreUsers = [];
-          snapshot.forEach(doc => firestoreUsers.push({ uid: doc.id, ...doc.data() }));
-          localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(firestoreUsers));
-          return firestoreUsers;
-        } else if (localUsers.length > 0) {
-          // Seed local users to Firestore
-          for (const u of localUsers) {
-            await this.saveUser(u);
-          }
-        }
-      } catch (err) {
-        console.warn('⚠️ Error fetching users from Cloud Firestore:', err);
-      }
-    }
-
-    return localUsers;
-  }
-
-  /**
-   * Update User Status (approved, rejected, pending, disabled) in Firestore
-   */
-  async updateUserStatus(uid, newStatus) {
-    const timestamp = new Date().toISOString();
-
-    // 1. Update local cache
-    try {
-      const stored = localStorage.getItem(USERS_CACHE_KEY);
-      if (stored) {
-        const users = JSON.parse(stored);
-        const idx = users.findIndex(u => u.uid === uid);
-        if (idx >= 0) {
-          users[idx].status = newStatus;
-          users[idx].statusUpdatedAt = timestamp;
-          localStorage.setItem(USERS_CACHE_KEY, JSON.stringify(users));
-        }
-      }
-    } catch (e) {}
-
-    // 2. Update Firestore document
-    if (fb.isLive && fb.firestore) {
-      try {
-        const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-        const userRef = doc(fb.firestore, 'users', uid);
-        await updateDoc(userRef, {
-          status: newStatus,
-          statusUpdatedAt: timestamp,
-          updatedAt: timestamp
-        });
-        console.log(`☁️ User ${uid} status updated to ${newStatus} in Cloud Firestore.`);
-      } catch (err) {
-        console.warn(`⚠️ Error updating user status in Firestore:`, err);
-      }
-    }
-
-    return true;
-  }
-
-  // ==========================================================================
-  // 4. CLOUD FIRESTORE — SENSOR CALIBRATION REGISTRY
-  // ==========================================================================
-
-  /**
-   * Save Sensor Calibration to Cloud Firestore + LocalStorage
+   * Save Sensor Calibration to Cloud Firestore + Realtime Database + LocalStorage
    */
   async saveSensorCalibration(sensorId, calibrationData) {
     const timestamp = new Date().toISOString();
@@ -408,9 +673,21 @@ export class FirebaseService {
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
         const calRef = doc(fb.firestore, 'sensorCalibration', sensorId);
         await setDoc(calRef, cleanData, { merge: true });
-        console.log(`☁️ Sensor calibration for ${sensorId} saved to Cloud Firestore.`);
+        console.log(`☁️ [Firestore] Sensor calibration for ${sensorId} saved.`);
       } catch (err) {
         console.warn(`⚠️ Error saving sensor calibration to Firestore:`, err);
+      }
+    }
+
+    // 3. Persist to Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const calRef = ref(fb.rtdb, `sensorCalibration/${sensorId}`);
+        await set(calRef, cleanData);
+        console.log(`☁️ [Realtime DB] Sensor calibration for ${sensorId} saved.`);
+      } catch (err) {
+        console.warn(`⚠️ Error saving sensor calibration to RTDB:`, err);
       }
     }
 
@@ -418,7 +695,7 @@ export class FirebaseService {
   }
 
   /**
-   * Load Sensor Calibrations from Cloud Firestore
+   * Load Sensor Calibrations from Cloud Firestore / Realtime Database
    */
   async getSensorCalibrations() {
     let registry = store.get('calibration') || {};
@@ -427,38 +704,54 @@ export class FirebaseService {
       if (stored) registry = JSON.parse(stored);
     } catch (e) {}
 
+    // 1. Try Firestore
     if (fb.isLive && fb.firestore) {
       try {
         const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
         const colRef = collection(fb.firestore, 'sensorCalibration');
         const snapshot = await getDocs(colRef);
         if (!snapshot.empty) {
-          const cloudRegistry = {};
           snapshot.forEach(doc => {
-            cloudRegistry[doc.id] = { id: doc.id, ...doc.data() };
+            registry[doc.id] = { id: doc.id, ...doc.data() };
           });
-          registry = cloudRegistry;
-          localStorage.setItem(CALIBRATION_CACHE_KEY, JSON.stringify(registry));
         }
-      } catch (err) {
-        console.warn('⚠️ Error fetching calibration from Cloud Firestore:', err);
-      }
+      } catch (err) {}
     }
+
+    // 2. Try Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, get } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const calRef = ref(fb.rtdb, 'sensorCalibration');
+        const snapshot = await get(calRef);
+        if (snapshot.exists()) {
+          const val = snapshot.val();
+          Object.keys(val).forEach(k => {
+            registry[k] = { id: k, ...val[k] };
+          });
+        }
+      } catch (err) {}
+    }
+
+    try {
+      localStorage.setItem(CALIBRATION_CACHE_KEY, JSON.stringify(registry));
+    } catch (e) {}
 
     store.set('calibration', registry);
     return registry;
   }
 
   // ==========================================================================
-  // 5. CLOUD FIRESTORE — AUDIT LOGS
+  // 5. AUDIT LOGS (FIRESTORE + RTDB)
   // ==========================================================================
 
   /**
-   * Save Audit Log event to Firestore + LocalStorage
+   * Save Audit Log event to Firestore + Realtime Database + LocalStorage
    */
   async saveAuditLog(logData) {
+    const logId = logData.id || `AUDIT-${Date.now()}`;
     const newLog = {
-      id: logData.id || `AUDIT-${Date.now()}`,
+      id: logId,
       timestamp: new Date().toISOString(),
       ...logData
     };
@@ -474,11 +767,22 @@ export class FirebaseService {
     // 2. Persist to Firestore
     if (fb.isLive && fb.firestore) {
       try {
-        const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-        const colRef = collection(fb.firestore, 'auditLogs');
-        await addDoc(colRef, newLog);
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+        const docRef = doc(fb.firestore, 'auditLogs', logId);
+        await setDoc(docRef, newLog);
       } catch (err) {
         console.warn('⚠️ Error recording audit log in Firestore:', err);
+      }
+    }
+
+    // 3. Persist to Realtime Database
+    if (fb.isLive && fb.rtdb) {
+      try {
+        const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+        const rtdbRef = ref(fb.rtdb, `auditLogs/${logId}`);
+        await set(rtdbRef, newLog);
+      } catch (err) {
+        console.warn('⚠️ Error recording audit log in RTDB:', err);
       }
     }
 

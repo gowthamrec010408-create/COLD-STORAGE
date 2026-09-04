@@ -95,6 +95,8 @@
       }
     }
 
+    const submitBtn = document.getElementById('btn-submit-login');
+
     form.onsubmit = async (e) => {
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim();
@@ -102,10 +104,25 @@
 
       try {
         if (errorBanner) errorBanner.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="pulse-dot"></span> VERIFYING WITH CLOUD DATABASE...';
+        }
+
         const user = await authService.loginUser(email, pass);
         window.location.href = 'dashboard.html';
       } catch (err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i data-lucide="log-in"></i> LOGIN WITH EMAIL';
+          if (window.lucide) window.lucide.createIcons();
+        }
+
         if (err.code === 'ACCOUNT_PENDING') {
+          if (err.user) {
+            sessionStorage.setItem('qoratech_pending_uid', err.user.uid);
+            sessionStorage.setItem('qoratech_pending_user', JSON.stringify(err.user));
+          }
           window.location.href = 'pending.html';
           return;
         }

@@ -210,6 +210,8 @@
       }
     }
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+
     form.onsubmit = async (e) => {
       e.preventDefault();
       const fullName = document.getElementById('reg-name').value.trim();
@@ -230,8 +232,13 @@
       const storageUnitId = document.getElementById('reg-storage-id').value.trim();
 
       try {
-        errorBanner.classList.add('hidden');
-        await authService.register({
+        if (errorBanner) errorBanner.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="pulse-dot"></span> SAVING TO CLOUD DATABASE...';
+        }
+
+        const res = await authService.register({
           fullName,
           email,
           phone,
@@ -249,8 +256,18 @@
           confirmPassword
         });
 
+        if (res && res.user) {
+          sessionStorage.setItem('qoratech_pending_uid', res.user.uid);
+          sessionStorage.setItem('qoratech_pending_user', JSON.stringify(res.user));
+        }
+
         window.location.href = 'pending.html';
       } catch (err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i data-lucide="user-plus"></i> CREATE ACCOUNT & SUBMIT FOR APPROVAL';
+          if (window.lucide) window.lucide.createIcons();
+        }
         showError(err.message || 'Registration failed.');
       }
     };

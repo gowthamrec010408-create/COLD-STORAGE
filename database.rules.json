@@ -30,6 +30,27 @@
     "diagnostics": {
       ".read": true,
       ".write": true
+    },
+    "users": {
+      ".read": true,
+      ".write": true,
+      ".indexOn": ["status", "email", "phone", "role"]
+    },
+    "pendingUsers": {
+      ".read": true,
+      ".write": true
+    },
+    "produceBatches": {
+      ".read": true,
+      ".write": true
+    },
+    "sensorCalibration": {
+      ".read": true,
+      ".write": true
+    },
+    "auditLogs": {
+      ".read": true,
+      ".write": true
     }
   }
 }

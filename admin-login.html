@@ -90,6 +90,8 @@
       }
     }
 
+    const submitBtn = document.getElementById('btn-submit-admin');
+
     form.onsubmit = async (e) => {
       e.preventDefault();
       const id = document.getElementById('admin-identifier').value.trim();
@@ -97,9 +99,19 @@
 
       try {
         if (errorBanner) errorBanner.classList.add('hidden');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="pulse-dot"></span> AUTHENTICATING WITH CLOUD DATABASE...';
+        }
+
         const user = await authService.loginAdmin(id, pass);
         window.location.href = 'admin.html';
       } catch (err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i data-lucide="lock"></i> ACCESS ADMIN DASHBOARD';
+          if (window.lucide) window.lucide.createIcons();
+        }
         showError(err.message || 'Administrator authentication failed.');
       }
     };

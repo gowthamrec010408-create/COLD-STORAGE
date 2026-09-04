@@ -25,49 +25,190 @@
         </div>
       </div>
 
-      <!-- Status Icon -->
-      <div class="pending-status-icon">
-        <i data-lucide="clock" class="icon-lg"></i>
+      <!-- Live Status Icon -->
+      <div class="pending-status-icon" id="pending-icon-box">
+        <i data-lucide="clock" class="icon-lg text-amber"></i>
       </div>
 
-      <div class="mb-3">
-        <span class="badge badge-warning text-xs">STATUS: PENDING</span>
+      <div class="mb-3" id="status-badge-container">
+        <span class="badge badge-warning text-xs" id="status-badge">
+          <span class="pulse-dot"></span> STATUS: PENDING ADMIN APPROVAL
+        </span>
       </div>
 
-      <h1 class="auth-page-title text-xl">ACCOUNT CREATED SUCCESSFULLY</h1>
-      <p class="auth-page-subtitle">
-        Your account registration has been submitted and is waiting for administrator approval.
+      <h1 class="auth-page-title text-xl" id="pending-title">Account Created & Synced to Cloud</h1>
+      <p class="auth-page-subtitle" id="pending-subtitle">
+        Your registration is safely stored in the Cloud Database and is waiting for the administrator to review and approve.
       </p>
 
+      <!-- Account Summary Card -->
+      <div id="user-details-card" class="hidden p-3.5 bg-card-dark rounded-xl border border-glass text-left text-xs mb-4 space-y-1.5">
+        <div class="text-3xs font-bold text-muted uppercase tracking-wider">Registered Profile</div>
+        <div class="flex justify-between">
+          <span class="text-muted">User:</span>
+          <span class="font-bold text-main" id="user-display-name">—</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-muted">Email / Phone:</span>
+          <span class="font-mono text-cyan" id="user-contact">—</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-muted">Location:</span>
+          <span class="font-semibold text-emerald" id="user-location">—</span>
+        </div>
+      </div>
+
+      <!-- Live Database Status Stream Card -->
       <div class="p-4 bg-card-dark rounded-xl border border-glass text-xs text-muted text-left space-y-2 mb-6">
         <div class="flex items-center gap-2">
-          <i data-lucide="check-circle" class="text-emerald icon-xs"></i>
-          <span>Registration credentials stored in Firestore</span>
+          <i data-lucide="cloud" class="text-cyan icon-xs"></i>
+          <span>Synced to Firebase Cloud Firestore & Realtime Database</span>
         </div>
         <div class="flex items-center gap-2">
           <i data-lucide="shield" class="text-amber icon-xs"></i>
-          <span>Administrator verification in progress</span>
+          <span>Admin verification in progress (Live Listener Active)</span>
         </div>
         <div class="flex items-center gap-2">
-          <i data-lucide="lock" class="text-dim icon-xs"></i>
-          <span>Cold storage telemetry access restricted until approved</span>
+          <i data-lucide="zap" class="text-emerald icon-xs"></i>
+          <span>Auto-detecting approval status in real-time</span>
         </div>
       </div>
 
       <!-- Action Buttons -->
       <div class="space-y-3">
-        <a href="login.html" class="btn btn-primary w-full py-3">
-          <i data-lucide="log-in"></i> BACK TO LOGIN
+        <button class="btn btn-outline w-full py-2.5" id="btn-check-status">
+          <i data-lucide="refresh-cw" class="icon-xs"></i> Check Approval Status Now
+        </button>
+        <a href="login.html" class="btn btn-primary w-full py-3" id="btn-login-link">
+          <i data-lucide="log-in"></i> GO TO LOGIN
         </a>
-        <a href="index.html" class="btn btn-outline w-full py-2.5">
-          <i data-lucide="home"></i> BACK TO HOME
+        <a href="index.html" class="btn btn-outline w-full py-2">
+          <i data-lucide="home" class="icon-xs"></i> Back to Home
         </a>
       </div>
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { authService } from './js/auth.js';
+    import { initializeFirebase } from './js/config/firebase-config.js';
+
     if (window.lucide) window.lucide.createIcons();
+
+    await initializeFirebase();
+
+    const pendingUid = sessionStorage.getItem('qoratech_pending_uid') || '';
+    const pendingUserJson = sessionStorage.getItem('qoratech_pending_user');
+    let pendingUser = null;
+    try {
+      if (pendingUserJson) pendingUser = JSON.parse(pendingUserJson);
+    } catch (e) {}
+
+    // Populate user details if available
+    if (pendingUser) {
+      const detailsCard = document.getElementById('user-details-card');
+      if (detailsCard) {
+        detailsCard.classList.remove('hidden');
+        document.getElementById('user-display-name').textContent = pendingUser.displayName || 'Farmer';
+        document.getElementById('user-contact').textContent = pendingUser.email || pendingUser.phone;
+        document.getElementById('user-location').textContent = pendingUser.nerState || pendingUser.location || 'Assam';
+      }
+    }
+
+    const badge = document.getElementById('status-badge');
+    const title = document.getElementById('pending-title');
+    const subtitle = document.getElementById('pending-subtitle');
+    const iconBox = document.getElementById('pending-icon-box');
+
+    function handleApproved(user) {
+      if (badge) {
+        badge.className = 'badge badge-normal text-xs';
+        badge.innerHTML = '<i data-lucide="check-circle" class="icon-2xs"></i> STATUS: APPROVED';
+      }
+      if (iconBox) {
+        iconBox.innerHTML = '<i data-lucide="check-circle-2" class="icon-lg text-emerald"></i>';
+      }
+      if (title) {
+        title.textContent = 'ACCOUNT APPROVED!';
+        title.classList.add('text-emerald');
+      }
+      if (subtitle) {
+        subtitle.textContent = 'Administrator has approved your account. Redirecting you to the Cold Storage Dashboard in 2 seconds...';
+      }
+      if (window.lucide) window.lucide.createIcons();
+
+      // Automatically create user session and navigate
+      setTimeout(() => {
+        try {
+          if (user) {
+            authService.evaluateUserStatus(user);
+          }
+        } catch (e) {}
+        window.location.href = 'dashboard.html';
+      }, 2000);
+    }
+
+    function handleRejected() {
+      if (badge) {
+        badge.className = 'badge badge-critical text-xs';
+        badge.textContent = 'STATUS: REJECTED';
+      }
+      if (iconBox) {
+        iconBox.innerHTML = '<i data-lucide="x-circle" class="icon-lg text-rose"></i>';
+      }
+      if (title) {
+        title.textContent = 'ACCOUNT NOT APPROVED';
+        title.classList.add('text-rose');
+      }
+      if (subtitle) {
+        subtitle.textContent = 'Your application was rejected by the administrator. Please contact your facility administrator.';
+      }
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    // 1. Subscribe to Live Status in Cloud Database
+    if (pendingUid) {
+      authService.subscribeUserStatus(pendingUid, (user) => {
+        if (user && user.status === 'approved') {
+          handleApproved(user);
+        } else if (user && user.status === 'rejected') {
+          handleRejected();
+        }
+      });
+    }
+
+    // 2. Manual Check Status Button
+    const checkBtn = document.getElementById('btn-check-status');
+    if (checkBtn) {
+      checkBtn.onclick = async () => {
+        checkBtn.disabled = true;
+        checkBtn.innerHTML = '<span class="pulse-dot"></span> Checking Cloud Database...';
+        
+        try {
+          const users = await authService.syncWithCloudDatabase();
+          let currentUser = null;
+          if (pendingUid) {
+            currentUser = users.find(u => u.uid === pendingUid);
+          } else if (pendingUser?.email) {
+            currentUser = users.find(u => u.email?.toLowerCase() === pendingUser.email.toLowerCase());
+          }
+
+          if (currentUser && currentUser.status === 'approved') {
+            handleApproved(currentUser);
+          } else if (currentUser && currentUser.status === 'rejected') {
+            handleRejected();
+          } else {
+            alert('Your account status is still Pending Administrator Verification. Please check back shortly or ask the administrator to approve in the Admin Control Center.');
+          }
+        } catch (err) {
+          alert('Could not reach database: ' + err.message);
+        } finally {
+          checkBtn.disabled = false;
+          checkBtn.innerHTML = '<i data-lucide="refresh-cw" class="icon-xs"></i> Check Approval Status Now';
+          if (window.lucide) window.lucide.createIcons();
+        }
+      };
+    }
   </script>
 </body>
 </html>

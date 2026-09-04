@@ -35,6 +35,7 @@ class DashboardPage {
       try {
         await initializeFirebase();
         await fbService.startRealtimeListeners();
+        await fbService.getProduceBatches();
       } catch (fbErr) {
         console.warn('Firebase init warning:', fbErr);
       }
