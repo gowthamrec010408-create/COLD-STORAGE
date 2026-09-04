@@ -1,0 +1,25 @@
+{
+  "rules": {
+    "zones": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "energy": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "devices": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "telemetryHistory": {
+      ".read": true,
+      ".write": "auth != null",
+      ".indexOn": ["timestamp", "zoneId"]
+    },
+    "alerts": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Control Center — QORA TECH</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <div class="app-shell-container">
+    <div id="sidebar-container"></div>
+
+    <div class="app-main-layout">
+      <div id="navbar-container"></div>
+
+      <main class="app-main-content">
+        <div id="admin-content">
+          <!-- Dynamic rendering from admin.js -->
+        </div>
+      </main>
+
+      <div id="mobile-bottom-nav-container"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

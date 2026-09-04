@@ -1,0 +1,10 @@
+/**
+ * QORA TECH — Sensor Calibration Stylesheet
+ * HX711 Load Cell Tare, Sensor Offsets, Factory Reset
+ */
+
+.cal-action-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}

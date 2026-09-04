@@ -1,0 +1,41 @@
+/**
+ * QORA TECH — Analytics Stylesheet
+ * Chart.js canvas containers, range tabs, time-series metrics
+ */
+
+.time-range-tabs, .zone-switcher-tabs {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+  gap: 0.2rem;
+}
+
+.range-btn, .zone-tab-btn {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.range-btn.active, .zone-tab-btn.active {
+  background: var(--brand-emerald);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.chart-card {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-canvas-wrapper {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 250px;
+}

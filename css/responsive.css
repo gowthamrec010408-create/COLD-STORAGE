@@ -1,0 +1,358 @@
+/**
+ * Solar Smart Cold Storage — Responsive & Mobile CSS
+ * Mobile Menu Drawer, Touch Adaptations, Breakpoint Adjustments & Print Styles
+ */
+
+/* Mobile Menu Drawer */
+.mobile-drawer {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 13, 22, 0.96);
+  backdrop-filter: blur(20px);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  transform: translateX(-100%);
+  transition: transform var(--transition-smooth);
+}
+
+.mobile-drawer.open {
+  transform: translateX(0);
+}
+
+.mobile-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: 1.5rem;
+}
+
+.mobile-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.mobile-nav-link:hover, .mobile-nav-link.active {
+  background: var(--brand-emerald-light);
+  color: var(--brand-emerald);
+}
+
+/* Landing Page Hero & Section Styles */
+.landing-hero {
+  text-align: center;
+  padding: 4rem 1rem 3rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-content {
+  max-width: 860px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  background: var(--brand-emerald-light);
+  color: var(--brand-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1.15;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .hero-title {
+    font-size: 3.75rem;
+  }
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 720px;
+  margin: 0 auto 2rem auto;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.hero-live-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  margin-top: 3rem;
+}
+
+.strip-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.strip-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.strip-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+}
+
+.strip-divider {
+  width: 1px;
+  height: 30px;
+  background: var(--border-glass);
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .strip-divider {
+    display: block;
+  }
+}
+
+/* Landing Zones Preview Grid */
+.landing-section {
+  padding: 3rem 0;
+}
+
+.section-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--brand-emerald);
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+}
+
+.section-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  max-width: 650px;
+  margin: 0 auto 2.5rem auto;
+}
+
+.landing-zones-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .landing-zones-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.zone-preview-card {
+  border-top-width: 4px;
+}
+
+.zone-preview-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  background: var(--bg-card-dark);
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  margin: 1rem 0;
+}
+
+.p-metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.p-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.p-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+}
+
+.zone-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.zone-feature-list div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Flow Container */
+.landing-flow-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .landing-flow-container {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.flow-step {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--brand-emerald-light);
+  color: var(--brand-emerald);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flow-step h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.flow-step p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.flow-arrow {
+  color: var(--text-dim);
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .flow-arrow {
+    display: block;
+  }
+}
+
+/* Call to Action Banner */
+.landing-cta-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+@media (min-width: 768px) {
+  .landing-cta-banner {
+    flex-direction: row;
+    text-align: left;
+  }
+}
+
+/* Chart Canvas Wrapper */
+.chart-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}
+
+/* Mobile & Tablet Breakpoints */
+@media (max-width: 1024px) {
+  .nav-links-desktop {
+    display: none;
+  }
+  .mobile-menu-trigger {
+    display: block !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .mobile-menu-trigger {
+    display: none !important;
+  }
+}
+
+/* Print Media Styles for Reports */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .app-navbar, #toast-container, .btn, .what-if-container, .modal-overlay {
+    display: none !important;
+  }
+  .glass-card {
+    background: #ffffff !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    color: #000 !important;
+  }
+  .text-muted {
+    color: #444 !important;
+  }
+}

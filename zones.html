@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three-Zone Monitoring — QORA TECH Cold Storage</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Modular Stylesheets -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/zones.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <div class="app-shell-container">
+    <div id="sidebar-container"></div>
+
+    <div class="app-main-layout">
+      <div id="navbar-container"></div>
+
+      <main class="app-main-content">
+        <!-- Header -->
+        <div class="glass-card mb-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="qora-pill-brand">QORA TECH</span>
+                <span class="badge badge-emerald"><i data-lucide="layers" class="icon-sm"></i> 3-ZONE MULTI-CLIMATE</span>
+              </div>
+              <h1 class="text-2xl font-bold mt-1">Independent 3-Zone Compartment Monitoring</h1>
+              <p class="text-xs text-muted">Left: 2–8°C | Center: 0–2°C (Deep Cold) | Right: 8–15°C (Chilling Sensitive Crops)</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <a href="calibration.html" class="btn btn-outline">
+                <i data-lucide="sliders"></i> Sensor Calibration
+              </a>
+              <a href="spoilage.html" class="btn btn-primary">
+                <i data-lucide="sparkles"></i> AI Freshness Studio
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div id="zones-content">
+          <!-- Dynamic rendering from zones.js -->
+        </div>
+      </main>
+
+      <div id="mobile-bottom-nav-container"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/zones.js"></script>
+</body>
+</html>

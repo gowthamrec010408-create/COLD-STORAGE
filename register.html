@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — QORA TECH Cold Storage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="auth-page-wrapper">
+    <div class="auth-form-card card-wide">
+      <!-- Header -->
+      <div class="text-center mb-6">
+        <div class="flex items-center justify-center gap-2 mb-3">
+          <img src="assets/logo.png" alt="QORA TECH Logo" class="qora-brand-img" style="width: 36px; height: 36px;" />
+          <div class="text-left">
+            <span class="font-bold text-sm block">QORA <span class="text-cyan">TECH</span></span>
+            <span class="text-3xs text-muted tracking-wider uppercase block">SOLAR SMART COLD STORAGE</span>
+          </div>
+        </div>
+        <h1 class="auth-page-title">Create Account</h1>
+        <p class="auth-page-subtitle">Register to connect your produce batches & receive NER Personalized Seasonal Crop Advice</p>
+      </div>
+
+      <!-- Error Message Banner -->
+      <div id="auth-error-banner" class="hidden mb-4 p-3 rounded-lg border border-rose bg-rose-light text-xs text-rose font-bold text-center"></div>
+
+      <!-- Registration Form -->
+      <form id="register-form" class="space-y-4">
+        <!-- Section 1: User & Security Info -->
+        <div class="p-3 bg-card-dark rounded-xl border border-glass space-y-3">
+          <span class="text-3xs font-bold text-muted tracking-wider uppercase flex items-center gap-1.5">
+            <i data-lucide="user" class="icon-2xs text-cyan"></i> 1. User & Account Credentials
+          </span>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="reg-name">Full Name *</label>
+              <div class="input-with-icon">
+                <i data-lucide="user"></i>
+                <input type="text" id="reg-name" class="form-control" placeholder="e.g. Ramesh Gogoi" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-email">Email ID (Login Username) *</label>
+              <div class="input-with-icon">
+                <i data-lucide="mail"></i>
+                <input type="email" id="reg-email" class="form-control" placeholder="e.g. ramesh.gogoi@northeastagro.in" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="reg-phone">Mobile Phone Number *</label>
+              <div class="input-with-icon">
+                <i data-lucide="phone"></i>
+                <input type="tel" id="reg-phone" class="form-control" placeholder="10-digit mobile number" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-usertype">Role / User Type *</label>
+              <select id="reg-usertype" class="form-control" required>
+                <option value="Farmer">Farmer / Grower</option>
+                <option value="Operator">Cold Storage Operator</option>
+                <option value="Technician">HVAC / Solar Technician</option>
+                <option value="Researcher">Agricultural Researcher</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="reg-password">Password (min 6 chars) *</label>
+              <div class="input-with-icon">
+                <i data-lucide="lock"></i>
+                <input type="password" id="reg-password" class="form-control" placeholder="••••••••" minlength="6" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-confirm">Confirm Password *</label>
+              <div class="input-with-icon">
+                <i data-lucide="lock"></i>
+                <input type="password" id="reg-confirm" class="form-control" placeholder="••••••••" minlength="6" required />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: NER Farming & Storage Profile -->
+        <div class="p-3 bg-card-dark rounded-xl border border-glass space-y-3" style="border-left: 3px solid var(--brand-emerald);">
+          <span class="text-3xs font-bold text-emerald tracking-wider uppercase flex items-center gap-1.5">
+            <i data-lucide="sprout" class="icon-2xs text-emerald"></i> 2. Northeast (NER) Farming & Storage Profile
+          </span>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="form-group">
+              <label for="reg-state">NER State *</label>
+              <select id="reg-state" class="form-control" required>
+                <option value="Assam" selected>Assam</option>
+                <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                <option value="Manipur">Manipur</option>
+                <option value="Meghalaya">Meghalaya</option>
+                <option value="Mizoram">Mizoram</option>
+                <option value="Nagaland">Nagaland</option>
+                <option value="Sikkim">Sikkim</option>
+                <option value="Tripura">Tripura</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-district">District *</label>
+              <input type="text" id="reg-district" class="form-control" placeholder="e.g. Kamrup / Kohima" value="Kamrup Rural" required />
+            </div>
+
+            <div class="form-group">
+              <label for="reg-location">Location / Village *</label>
+              <input type="text" id="reg-location" class="form-control" placeholder="e.g. Sualkuchi / Medziphema" value="Guwahati Outskirts" required />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="reg-primary-crops">Primary Crops Cultivated *</label>
+              <input type="text" id="reg-primary-crops" class="form-control" placeholder="e.g. Naga Chilli, Ginger, Cabbage" value="Ginger, Naga King Chilli, Cabbage" required />
+            </div>
+
+            <div class="form-group">
+              <label for="reg-secondary-crops">Secondary Crops</label>
+              <input type="text" id="reg-secondary-crops" class="form-control" placeholder="e.g. Green Beans, Tree Tomato, Turmeric" value="Lakadong Turmeric, Green Beans" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="form-group">
+              <label for="reg-capacity">Storage Capacity Needed (kg) *</label>
+              <input type="number" id="reg-capacity" class="form-control" placeholder="e.g. 500" value="500" min="10" max="50000" required />
+            </div>
+
+            <div class="form-group">
+              <label for="reg-pref-crop">Preferred Crop for Storage</label>
+              <select id="reg-pref-crop" class="form-control">
+                <option value="Ginger (Fresh Rhizome)">Ginger (Fresh Rhizome)</option>
+                <option value="Naga King Chilli (Bhut Jolokia)">Naga King Chilli (Bhut Jolokia)</option>
+                <option value="Lakadong Turmeric">Lakadong Turmeric</option>
+                <option value="Naga Tree Tomato">Naga Tree Tomato</option>
+                <option value="Cabbage">Cabbage</option>
+                <option value="Cauliflower">Cauliflower</option>
+                <option value="Green Beans">Green Beans</option>
+                <option value="Broccoli">Broccoli</option>
+                <option value="Table Potato">Table Potato</option>
+                <option value="Seed Potato">Seed Potato</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-storage-id">Storage Unit ID *</label>
+              <input type="text" id="reg-storage-id" class="form-control" value="COLD-ROOM-01" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="btn btn-primary w-full py-3" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+            <i data-lucide="user-plus"></i> CREATE ACCOUNT & SUBMIT FOR APPROVAL
+          </button>
+        </div>
+      </form>
+
+      <!-- Bottom Links -->
+      <div class="mt-6 pt-4 border-t border-glass text-center text-xs text-muted space-y-3">
+        <div>
+          <span>Already have an account?</span>
+          <a href="login.html" class="auth-nav-link ml-1">LOGIN</a>
+        </div>
+        <div>
+          <a href="index.html" class="text-dim hover:underline flex items-center justify-center gap-1">
+            <i data-lucide="arrow-left" class="icon-2xs"></i> Back to Home
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { authService } from './js/auth.js';
+    import { initializeFirebase } from './js/config/firebase-config.js';
+
+    if (window.lucide) window.lucide.createIcons();
+    await initializeFirebase();
+
+    const form = document.getElementById('register-form');
+    const errorBanner = document.getElementById('auth-error-banner');
+
+    function showError(msg) {
+      if (errorBanner) {
+        errorBanner.textContent = msg;
+        errorBanner.classList.remove('hidden');
+      }
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const userType = document.getElementById('reg-usertype').value;
+      const password = document.getElementById('reg-password').value;
+      const confirmPassword = document.getElementById('reg-confirm').value;
+
+      // Farming Profile
+      const nerState = document.getElementById('reg-state').value;
+      const district = document.getElementById('reg-district').value.trim();
+      const location = document.getElementById('reg-location').value.trim();
+      const primaryCrops = document.getElementById('reg-primary-crops').value.trim();
+      const secondaryCrops = document.getElementById('reg-secondary-crops').value.trim();
+      const storageCapacityKg = parseFloat(document.getElementById('reg-capacity').value) || 500;
+      const preferredCrop = document.getElementById('reg-pref-crop').value;
+      const storageUnitId = document.getElementById('reg-storage-id').value.trim();
+
+      try {
+        errorBanner.classList.add('hidden');
+        await authService.register({
+          fullName,
+          email,
+          phone,
+          userType,
+          location: `${location}, ${district}, ${nerState}`,
+          nerState,
+          district,
+          village: location,
+          primaryCrops,
+          secondaryCrops,
+          storageCapacityKg,
+          preferredCrop,
+          storageUnitId,
+          password,
+          confirmPassword
+        });
+
+        window.location.href = 'pending.html';
+      } catch (err) {
+        showError(err.message || 'Registration failed.');
+      }
+    };
+  </script>
+</body>
+</html>

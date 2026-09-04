@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Login — QORA TECH Cold Storage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="auth-page-wrapper">
+    <div class="auth-form-card">
+      <!-- Header -->
+      <div class="text-center mb-6">
+        <div class="flex items-center justify-center gap-2 mb-3">
+          <img src="assets/logo.png" alt="QORA TECH Logo" class="qora-brand-img" style="width: 36px; height: 36px;" />
+          <div class="text-left">
+            <span class="font-bold text-sm block">QORA <span class="text-emerald">TECH</span></span>
+            <span class="text-3xs text-muted tracking-wider uppercase block">SOLAR SMART COLD STORAGE</span>
+          </div>
+        </div>
+        <h1 class="auth-page-title">User Login</h1>
+        <p class="auth-page-subtitle">Enter your registered Email ID and password to access Dashboard</p>
+      </div>
+
+      <!-- Error Message Banner -->
+      <div id="auth-error-banner" class="hidden mb-4 p-3 rounded-lg border border-rose bg-rose-light text-xs text-rose font-bold text-center"></div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="space-y-4">
+        <div class="form-group">
+          <label for="login-email">Email ID *</label>
+          <div class="input-with-icon">
+            <i data-lucide="mail"></i>
+            <input type="email" id="login-email" class="form-control" placeholder="e.g. tsering.farmer@northeastagro.in" value="tsering.farmer@northeastagro.in" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Password *</label>
+          <div class="input-with-icon">
+            <i data-lucide="lock"></i>
+            <input type="password" id="login-password" class="form-control" placeholder="••••••••" value="farmer123" required />
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="btn btn-primary w-full py-3" id="btn-submit-login">
+            <i data-lucide="log-in"></i> LOGIN WITH EMAIL
+          </button>
+        </div>
+      </form>
+
+      <!-- Bottom Links -->
+      <div class="mt-6 pt-4 border-t border-glass text-center text-xs text-muted space-y-3">
+        <div>
+          <span>Don't have an account?</span>
+          <a href="register.html" class="auth-nav-link ml-1">CREATE ACCOUNT</a>
+        </div>
+        <div>
+          <span>Are you an administrator?</span>
+          <a href="admin-login.html" class="auth-nav-link ml-1" style="color: var(--brand-purple);">ADMIN LOGIN &rarr;</a>
+        </div>
+        <div>
+          <a href="index.html" class="text-dim hover:underline flex items-center justify-center gap-1">
+            <i data-lucide="arrow-left" class="icon-2xs"></i> Back to Home
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { authService } from './js/auth.js';
+    import { initializeFirebase } from './js/config/firebase-config.js';
+
+    if (window.lucide) window.lucide.createIcons();
+
+    await initializeFirebase();
+
+    const form = document.getElementById('login-form');
+    const errorBanner = document.getElementById('auth-error-banner');
+
+    function showError(msg) {
+      if (errorBanner) {
+        errorBanner.textContent = msg;
+        errorBanner.classList.remove('hidden');
+      }
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const pass = document.getElementById('login-password').value;
+
+      try {
+        if (errorBanner) errorBanner.classList.add('hidden');
+        const user = await authService.loginUser(email, pass);
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        if (err.code === 'ACCOUNT_PENDING') {
+          window.location.href = 'pending.html';
+          return;
+        }
+        showError(err.message || 'Invalid Email ID or password. Please verify your credentials.');
+      }
+    };
+  </script>
+</body>
+</html>

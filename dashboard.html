@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Overview — QORA TECH Cold Storage</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Modular Stylesheets -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/zones.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <!-- Icons & External Libs -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Hardware Services -->
+  <script src="js/services/ip-service.js"></script>
+  <script src="js/services/serial-service.js"></script>
+</head>
+<body>
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <div class="app-shell-container">
+    <!-- Injected Left Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Workspace -->
+    <div class="app-main-layout">
+      <!-- Injected Topbar -->
+      <div id="navbar-container"></div>
+
+      <!-- Main Page Content -->
+      <main class="app-main-content">
+        <div id="dashboard-content">
+          <!-- Dynamic rendering from dashboard.js -->
+        </div>
+      </main>
+
+      <!-- Injected Mobile Bottom Navigation -->
+      <div id="mobile-bottom-nav-container"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

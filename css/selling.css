@@ -1,0 +1,57 @@
+/**
+ * QORA TECH — Smart Selling Stylesheet
+ * Quality-Ranked Inventory Queue & Dispatch Actions
+ */
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 900;
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.1;
+  margin: 0.5rem 0;
+}
+
+.stat-sub {
+  font-size: 0.75rem;
+}
+
+.border-rose { border-top: 3px solid var(--brand-rose); }
+.border-amber { border-top: 3px solid var(--brand-amber); }
+.border-emerald { border-top: 3px solid var(--brand-emerald); }
+.border-cyan { border-top: 3px solid var(--brand-cyan); }
+.border-purple { border-top: 3px solid var(--brand-purple); }
+
+.row-urgent {
+  background: rgba(244, 63, 94, 0.08) !important;
+}
+
+.mini-progress-bar {
+  width: 60px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+}

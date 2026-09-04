@@ -1,0 +1,220 @@
+/**
+ * QORA TECH — Authentication & Public Portal Stylesheet
+ * Clean Public Home Hero, 3 Action Cards, User Login, Register, Pending Approval, Admin Login
+ */
+
+/* ==============================================================================
+ * PUBLIC HOME PAGE (index.html)
+ * ============================================================================== */
+.public-home-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.public-home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 2rem;
+}
+
+.public-hero-section {
+  text-align: center;
+  margin: auto 0;
+  padding: 3rem 0 2rem 0;
+}
+
+.hero-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--brand-emerald);
+  margin-bottom: 1.5rem;
+}
+
+.public-hero-title {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 900;
+  line-height: 1.1;
+  max-width: 950px;
+  margin: 0 auto 1.5rem auto;
+  background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.public-hero-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 720px;
+  margin: 0 auto 3rem auto;
+  line-height: 1.6;
+}
+
+/* 3 PRIMARY ACTION CARDS */
+.home-action-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.home-action-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 1.75rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  text-align: left;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--card-accent, var(--brand-emerald));
+  opacity: 0.7;
+}
+
+.home-action-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-glass-bright);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+}
+
+.home-action-card.card-login { --card-accent: var(--brand-emerald); }
+.home-action-card.card-register { --card-accent: var(--brand-cyan); }
+.home-action-card.card-admin { --card-accent: var(--brand-purple); }
+
+.card-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+}
+
+.card-login .card-icon-box { color: var(--brand-emerald); background: var(--brand-emerald-light); }
+.card-register .card-icon-box { color: var(--brand-cyan); background: var(--brand-cyan-light); }
+.card-admin .card-icon-box { color: var(--brand-purple); background: var(--brand-purple-light); }
+
+.home-action-card h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.home-action-card p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.public-home-footer {
+  text-align: center;
+  padding-top: 3rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* ==============================================================================
+ * DEDICATED AUTH PAGES (login.html, register.html, pending.html, admin-login.html)
+ * ============================================================================== */
+.auth-page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1.5rem;
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(13, 21, 39, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-glass-bright);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.auth-form-card.card-wide {
+  max-width: 580px;
+}
+
+.auth-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-full);
+  margin-bottom: 1.25rem;
+}
+
+.auth-page-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+
+.auth-page-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.75rem;
+}
+
+.auth-nav-link {
+  color: var(--brand-emerald);
+  font-weight: 600;
+  transition: color var(--transition-fast);
+}
+
+.auth-nav-link:hover {
+  text-decoration: underline;
+}
+
+/* Pending Screen */
+.pending-status-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--brand-amber-light);
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem auto;
+  color: var(--brand-amber);
+}

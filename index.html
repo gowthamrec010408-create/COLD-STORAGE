@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QORA TECH — Solar Smart Cold Storage</title>
+  <meta name="description" content="Real-Time Solar Powered Multi-Zone Cold Storage Monitoring and AI-Assisted Produce Quality Management." />
+
+  <!-- Google Fonts: Outfit, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="public-home-container">
+    <!-- Top Header -->
+    <header class="public-home-header">
+      <div class="qora-brand">
+        <img src="assets/logo.png" alt="QORA TECH Logo" class="qora-brand-img" />
+        <div class="qora-brand-text-col">
+          <span class="qora-title">QORA <span class="text-emerald">TECH</span></span>
+          <span class="qora-subtitle">SOLAR SMART COLD STORAGE</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="btn btn-xs btn-outline" id="theme-toggle-btn" title="Toggle Theme">
+          <i data-lucide="moon" class="icon-xs"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="public-hero-section">
+      <div class="hero-pill-tag">
+        <span class="pulse-dot"></span>
+        <span>REAL-TIME IOT & AI POST-HARVEST PLATFORM</span>
+      </div>
+
+      <h1 class="public-hero-title">
+        QORA TECH<br />
+        <span class="text-emerald">SOLAR SMART COLD STORAGE</span>
+      </h1>
+
+      <p class="public-hero-subtitle">
+        Real-Time Solar Powered Multi-Zone Cold Storage Monitoring and AI-Assisted Produce Quality Management.
+      </p>
+
+      <!-- 3 Primary Action Cards -->
+      <div class="home-action-cards-grid">
+        <!-- 1. LOGIN -->
+        <a href="login.html" class="home-action-card card-login">
+          <div>
+            <div class="card-icon-box">
+              <i data-lucide="log-in" class="icon-md"></i>
+            </div>
+            <h3>User Login</h3>
+            <p>Access your cold storage monitoring dashboard, live sensor streams, and AI freshness estimates.</p>
+          </div>
+          <div class="btn btn-primary w-full">
+            <span>LOGIN</span>
+            <i data-lucide="arrow-right" class="icon-xs"></i>
+          </div>
+        </a>
+
+        <!-- 2. CREATE ACCOUNT -->
+        <a href="register.html" class="home-action-card card-register">
+          <div>
+            <div class="card-icon-box">
+              <i data-lucide="user-plus" class="icon-md"></i>
+            </div>
+            <h3>Create Account</h3>
+            <p>Register as a farmer, grower, or cold storage operator to connect your produce batches to the unit.</p>
+          </div>
+          <div class="btn btn-outline w-full" style="border-color: var(--brand-cyan); color: var(--brand-cyan);">
+            <span>CREATE ACCOUNT</span>
+            <i data-lucide="arrow-right" class="icon-xs"></i>
+          </div>
+        </a>
+
+        <!-- 3. ADMIN LOGIN -->
+        <a href="admin-login.html" class="home-action-card card-admin">
+          <div>
+            <div class="card-icon-box">
+              <i data-lucide="shield-check" class="icon-md"></i>
+            </div>
+            <h3>Admin Login</h3>
+            <p>System administrator control center for user account approvals, sensor calibration, and facility governance.</p>
+          </div>
+          <div class="btn btn-admin w-full">
+            <span>ADMIN LOGIN</span>
+            <i data-lucide="arrow-right" class="icon-xs"></i>
+          </div>
+        </a>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="public-home-footer">
+      <p>© 2026 QORA TECH • Solar-Powered Multi-Zone Cold Storage Platform</p>
+    </footer>
+  </div>
+
+  <script>
+    if (window.lucide) window.lucide.createIcons();
+
+    // Theme toggle
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+      const savedTheme = localStorage.getItem('solarsmart_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      themeBtn.onclick = () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('solarsmart_theme', next);
+      };
+    }
+  </script>
+</body>
+</html>

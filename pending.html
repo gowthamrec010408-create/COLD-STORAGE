@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Pending Approval — QORA TECH</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="auth-page-wrapper">
+    <div class="auth-form-card text-center">
+      <div class="flex items-center justify-center gap-2 mb-4">
+        <img src="assets/logo.png" alt="QORA TECH Logo" class="qora-brand-img" style="width: 36px; height: 36px;" />
+        <div class="text-left">
+          <span class="font-bold text-sm block">QORA <span class="text-emerald">TECH</span></span>
+          <span class="text-3xs text-muted tracking-wider uppercase block">SOLAR SMART COLD STORAGE</span>
+        </div>
+      </div>
+
+      <!-- Status Icon -->
+      <div class="pending-status-icon">
+        <i data-lucide="clock" class="icon-lg"></i>
+      </div>
+
+      <div class="mb-3">
+        <span class="badge badge-warning text-xs">STATUS: PENDING</span>
+      </div>
+
+      <h1 class="auth-page-title text-xl">ACCOUNT CREATED SUCCESSFULLY</h1>
+      <p class="auth-page-subtitle">
+        Your account registration has been submitted and is waiting for administrator approval.
+      </p>
+
+      <div class="p-4 bg-card-dark rounded-xl border border-glass text-xs text-muted text-left space-y-2 mb-6">
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle" class="text-emerald icon-xs"></i>
+          <span>Registration credentials stored in Firestore</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="shield" class="text-amber icon-xs"></i>
+          <span>Administrator verification in progress</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="lock" class="text-dim icon-xs"></i>
+          <span>Cold storage telemetry access restricted until approved</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-3">
+        <a href="login.html" class="btn btn-primary w-full py-3">
+          <i data-lucide="log-in"></i> BACK TO LOGIN
+        </a>
+        <a href="index.html" class="btn btn-outline w-full py-2.5">
+          <i data-lucide="home"></i> BACK TO HOME
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (window.lucide) window.lucide.createIcons();
+  </script>
+</body>
+</html>
