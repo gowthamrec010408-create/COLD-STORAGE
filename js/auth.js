@@ -1,11 +1,12 @@
 /**
  * QORA TECH — Solar Smart Cold Storage
  * Unified Authentication & Access Control Service
- * Handles user login, registration, admin auth, role gating, and status approval.
+ * Handles user login, registration, admin auth, role gating, and Cloud Firestore user sync.
  */
 
 import { store } from './core/state.js';
-import { fb } from './config/firebase-config.js';
+import { fb, initializeFirebase } from './config/firebase-config.js';
+import { firebaseService } from './services/firebase-service.js';
 
 const USERS_STORAGE_KEY = 'qoratech_registered_users';
 const SESSION_STORAGE_KEY = 'qoratech_session';
@@ -82,7 +83,7 @@ export class AuthService {
     this.initUsersStore();
   }
 
-  initUsersStore() {
+  async initUsersStore() {
     try {
       const stored = localStorage.getItem(USERS_STORAGE_KEY);
       if (!stored) {
@@ -106,6 +107,16 @@ export class AuthService {
           localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
         }
       }
+
+      // Sync with Cloud Firestore in background
+      setTimeout(async () => {
+        try {
+          await initializeFirebase();
+          if (fb.isLive) {
+            await firebaseService.getUsers();
+          }
+        } catch (e) {}
+      }, 500);
     } catch (e) {
       console.warn('Could not initialize user store:', e);
     }
@@ -228,7 +239,7 @@ export class AuthService {
   }
 
   /**
-   * Create account registration with status = "pending"
+   * Create account registration with status = "pending" and save to Firestore
    */
   async register(formData) {
     const {
@@ -293,8 +304,8 @@ export class AuthService {
       createdAt: new Date().toISOString()
     };
 
-    users.push(newUser);
-    this.saveUsers(users);
+    // Save to local cache & Cloud Firestore
+    await firebaseService.saveUser(newUser);
 
     return {
       success: true,
@@ -376,9 +387,9 @@ export class AuthService {
   }
 
   /**
-   * Admin Approval Actions
+   * Admin Approval Actions (Updates Firestore + LocalStorage + Audit Logs)
    */
-  updateUserStatus(uid, newStatus) {
+  async updateUserStatus(uid, newStatus) {
     const currentUser = this.requireAdmin();
     if (!currentUser) return null;
 
@@ -390,13 +401,11 @@ export class AuthService {
       throw new Error('Primary root administrator cannot be modified.');
     }
 
-    users[index].status = newStatus;
-    users[index].statusUpdatedAt = new Date().toISOString();
-    this.saveUsers(users);
+    // 1. Update status in Cloud Firestore & LocalStorage
+    await firebaseService.updateUserStatus(uid, newStatus);
 
-    // Record audit log
-    const auditLogs = JSON.parse(localStorage.getItem('qoratech_audit_logs') || '[]');
-    auditLogs.unshift({
+    // 2. Record audit log in Cloud Firestore & LocalStorage
+    await firebaseService.saveAuditLog({
       id: `AUDIT-${Date.now()}`,
       action: `USER_STATUS_${newStatus.toUpperCase()}`,
       targetUser: users[index].displayName,
@@ -404,8 +413,9 @@ export class AuthService {
       admin: currentUser.displayName,
       timestamp: new Date().toISOString()
     });
-    localStorage.setItem('qoratech_audit_logs', JSON.stringify(auditLogs.slice(0, 100)));
 
+    users[index].status = newStatus;
+    users[index].statusUpdatedAt = new Date().toISOString();
     return users[index];
   }
 }

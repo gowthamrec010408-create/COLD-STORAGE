@@ -24,9 +24,18 @@ class AdminControlCenter {
     this.showAddLogModal = false;
   }
 
-  init() {
+  async init() {
     setupNavigation('admin', true);
     this.render();
+    try {
+      const { initializeFirebase } = await import('./config/firebase-config.js');
+      const { firebaseService } = await import('./services/firebase-service.js');
+      await initializeFirebase();
+      await firebaseService.getUsers();
+      this.render();
+    } catch (e) {
+      console.warn('Admin Firestore sync warning:', e);
+    }
   }
 
   render() {
@@ -659,37 +668,42 @@ class AdminControlCenter {
 
     // 3. User Approval Actions
     document.querySelectorAll('.approve-user-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const uid = btn.getAttribute('data-uid');
+        btn.disabled = true;
         try {
-          authService.updateUserStatus(uid, 'approved');
-          showToast('User approved successfully. Monitoring access granted.', 'success');
+          await authService.updateUserStatus(uid, 'approved');
+          showToast('User approved successfully. Synced to Cloud Firestore.', 'success');
           this.render();
         } catch (e) {
           alert('Approval error: ' + e.message);
+          btn.disabled = false;
         }
       };
     });
 
     document.querySelectorAll('.reject-user-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const uid = btn.getAttribute('data-uid');
+        btn.disabled = true;
         try {
-          authService.updateUserStatus(uid, 'rejected');
-          showToast('User account rejected.', 'error');
+          await authService.updateUserStatus(uid, 'rejected');
+          showToast('User account rejected and updated in Firestore.', 'error');
           this.render();
         } catch (e) {
           alert('Rejection error: ' + e.message);
+          btn.disabled = false;
         }
       };
     });
 
     document.querySelectorAll('.disable-user-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const uid = btn.getAttribute('data-uid');
         if (confirm('Disable this user account?')) {
-          authService.updateUserStatus(uid, 'disabled');
-          showToast('User account disabled.', 'normal');
+          btn.disabled = true;
+          await authService.updateUserStatus(uid, 'disabled');
+          showToast('User account disabled in Cloud Firestore.', 'normal');
           this.render();
         }
       };

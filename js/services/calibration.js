@@ -1,21 +1,33 @@
 /**
  * Solar Smart Cold Storage — Sensor Calibration Service
  * Provides HX711 Load Cell Tare, 2-point weight calibration,
- * electrochemical ethylene baseline zeroing, and temperature offset adjustments.
+ * electrochemical ethylene baseline zeroing, and temperature offset adjustments
+ * with persistent Cloud Firestore & LocalStorage synchronization.
  */
 
 import { store } from '../core/state.js';
+import { firebaseService } from './firebase-service.js';
 
 export class SensorCalibrationService {
+  /**
+   * Load calibrations from Cloud Firestore on startup
+   */
+  async init() {
+    try {
+      await firebaseService.getSensorCalibrations();
+    } catch (e) {
+      console.warn('Calibration init warning:', e);
+    }
+  }
+
   /**
    * Perform Zero Tare for a Load Cell
    * @param {string} sensorId - e.g. 'loadcell-z1'
    * @param {number} rawAdcReading - current raw digital reading from HX711
    */
-  tareLoadCell(sensorId, rawAdcReading = null) {
-    const registry = store.get('calibration');
-    const sensor = registry[sensorId];
-    if (!sensor) throw new Error(`Sensor ${sensorId} not found.`);
+  async tareLoadCell(sensorId, rawAdcReading = null) {
+    const registry = store.get('calibration') || {};
+    const sensor = registry[sensorId] || { id: sensorId, zone: 1, type: 'Load Cell (HX711)', unit: 'kg' };
 
     // Simulated or supplied raw ADC reading
     const simulatedRaw = rawAdcReading || (80000 + Math.round((Math.random() - 0.5) * 4000));
@@ -27,7 +39,7 @@ export class SensorCalibrationService {
       status: 'CALIBRATED'
     };
 
-    store.set(`calibration.${sensorId}`, updated);
+    await firebaseService.saveSensorCalibration(sensorId, updated);
     return updated;
   }
 
@@ -37,8 +49,8 @@ export class SensorCalibrationService {
    * @param {number} knownWeightKg - Reference weight placed on scale in kg (e.g. 20.0 kg)
    * @param {number} rawLoadedAdc - Raw reading with weight placed
    */
-  calibrateWithKnownWeight(sensorId, knownWeightKg, rawLoadedAdc = null) {
-    const registry = store.get('calibration');
+  async calibrateWithKnownWeight(sensorId, knownWeightKg, rawLoadedAdc = null) {
+    const registry = store.get('calibration') || {};
     const sensor = registry[sensorId];
     if (!sensor) throw new Error(`Sensor ${sensorId} not found.`);
     if (!knownWeightKg || knownWeightKg <= 0) throw new Error('Reference weight must be greater than zero.');
@@ -57,7 +69,7 @@ export class SensorCalibrationService {
       status: 'CALIBRATED'
     };
 
-    store.set(`calibration.${sensorId}`, updated);
+    await firebaseService.saveSensorCalibration(sensorId, updated);
     return updated;
   }
 
@@ -65,8 +77,8 @@ export class SensorCalibrationService {
    * Zero Clean-Air Baseline for Ethylene Gas Sensor
    * @param {string} sensorId - e.g. 'ethylene-z1'
    */
-  zeroEthyleneSensor(sensorId) {
-    const registry = store.get('calibration');
+  async zeroEthyleneSensor(sensorId) {
+    const registry = store.get('calibration') || {};
     const sensor = registry[sensorId];
     if (!sensor) throw new Error(`Sensor ${sensorId} not found.`);
 
@@ -77,17 +89,16 @@ export class SensorCalibrationService {
       status: 'CALIBRATED'
     };
 
-    store.set(`calibration.${sensorId}`, updated);
+    await firebaseService.saveSensorCalibration(sensorId, updated);
     return updated;
   }
 
   /**
    * Update manual calibration parameters
    */
-  saveSensorParams(sensorId, params) {
-    const registry = store.get('calibration');
-    const sensor = registry[sensorId];
-    if (!sensor) throw new Error(`Sensor ${sensorId} not found.`);
+  async saveSensorParams(sensorId, params) {
+    const registry = store.get('calibration') || {};
+    const sensor = registry[sensorId] || { id: sensorId, zone: 1, unit: 'kg' };
 
     const updated = {
       ...sensor,
@@ -96,17 +107,16 @@ export class SensorCalibrationService {
       status: 'CALIBRATED'
     };
 
-    store.set(`calibration.${sensorId}`, updated);
+    await firebaseService.saveSensorCalibration(sensorId, updated);
     return updated;
   }
 
   /**
    * Reset sensor calibration to factory defaults
    */
-  resetToFactory(sensorId) {
-    const registry = store.get('calibration');
-    const sensor = registry[sensorId];
-    if (!sensor) throw new Error(`Sensor ${sensorId} not found.`);
+  async resetToFactory(sensorId) {
+    const registry = store.get('calibration') || {};
+    const sensor = registry[sensorId] || { id: sensorId };
 
     let defaultOffset = 0;
     let defaultFactor = 1.0;
@@ -127,7 +137,7 @@ export class SensorCalibrationService {
       status: 'FACTORY'
     };
 
-    store.set(`calibration.${sensorId}`, updated);
+    await firebaseService.saveSensorCalibration(sensorId, updated);
     return updated;
   }
 }

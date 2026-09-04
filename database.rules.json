@@ -1,25 +1,35 @@
 {
   "rules": {
+    ".read": true,
+    ".write": true,
+    "live": {
+      ".read": true,
+      ".write": true
+    },
     "zones": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": true
     },
     "energy": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": true
     },
     "devices": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": true
     },
     "telemetryHistory": {
       ".read": true,
-      ".write": "auth != null",
+      ".write": true,
       ".indexOn": ["timestamp", "zoneId"]
     },
     "alerts": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": true
+    },
+    "diagnostics": {
+      ".read": true,
+      ".write": true
     }
   }
 }

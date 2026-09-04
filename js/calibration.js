@@ -1,17 +1,27 @@
 /**
  * QORA TECH — Sensor Calibration Page Controller
- * HX711 Load Cell Tare, 2-point mass calibration, and ethylene baseline offsets.
+ * HX711 Load Cell Tare, 2-point mass calibration, and ethylene baseline offsets
+ * with persistent Cloud Firestore database synchronization.
  */
 
 import { setupNavigation } from './navigation.js';
 import { store } from './core/state.js';
 import { calibrationService } from './services/calibration.js';
+import { initializeFirebase } from './config/firebase-config.js';
 
 class CalibrationPage {
-  init() {
+  async init() {
     setupNavigation('calibration');
     this.render();
     store.subscribe('calibration', () => this.render());
+
+    try {
+      await initializeFirebase();
+      await calibrationService.init();
+      this.render();
+    } catch (e) {
+      console.warn('Calibration initialization warning:', e);
+    }
   }
 
   render() {
@@ -28,10 +38,10 @@ class CalibrationPage {
           <div>
             <div class="flex items-center gap-2">
               <span class="badge badge-amber"><i data-lucide="sliders" class="icon-sm"></i> HARDWARE INSTRUMENTATION</span>
-              <span class="text-xs text-muted">Field ADC & Transducer Offsets</span>
+              <span class="badge badge-cyan"><i data-lucide="cloud" class="icon-2xs"></i> Firestore Synced</span>
             </div>
             <h1 class="text-2xl font-bold mt-1">Sensor Calibration & Zero Tare Suite</h1>
-            <p class="text-xs text-muted">Calibrate HX711 load cells, baseline electrochemical ethylene probes, and thermal RTD offsets.</p>
+            <p class="text-xs text-muted">Calibrate HX711 load cells, baseline electrochemical ethylene probes, and thermal RTD offsets saved directly to Cloud Firestore.</p>
           </div>
 
           <div class="flex items-center gap-2">
@@ -48,7 +58,7 @@ class CalibrationPage {
           <h3 class="font-bold text-base flex items-center gap-2">
             <i data-lucide="check-circle-2" class="text-emerald"></i> Calibrated Transducers & Probes (${sensors.length})
           </h3>
-          <span class="text-3xs text-muted">Stored in ESP32 Non-Volatile EEPROM / Firestore</span>
+          <span class="text-3xs text-muted">Collection: <code class="text-cyan">sensorCalibration</code></span>
         </div>
 
         <div class="table-responsive">
@@ -147,7 +157,9 @@ class CalibrationPage {
 
             <div class="modal-actions mt-4 flex justify-end gap-3">
               <button type="button" class="btn btn-outline" id="close-cal-modal-btn-2">Cancel</button>
-              <button type="submit" class="btn btn-primary">Save & Apply to EEPROM</button>
+              <button type="submit" class="btn btn-primary" id="save-cal-submit-btn">
+                <i data-lucide="save"></i> Save to Cloud Firestore
+              </button>
             </div>
           </form>
         </div>
@@ -168,20 +180,22 @@ class CalibrationPage {
 
     // Tare single
     document.querySelectorAll('.tare-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const id = btn.getAttribute('data-id');
-        calibrationService.tareLoadCell(id);
-        alert(`✅ Load cell [${id}] tared to 0.00 kg.`);
+        btn.disabled = true;
+        await calibrationService.tareLoadCell(id);
+        alert(`✅ Load cell [${id}] tared to 0.00 kg and saved to Cloud Firestore.`);
         this.render();
       };
     });
 
     // Zero air for ethylene
     document.querySelectorAll('.zero-gas-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const id = btn.getAttribute('data-id');
-        calibrationService.zeroEthyleneGas(id);
-        alert(`✅ Gas sensor [${id}] zero baseline saved (0.00 ppm).`);
+        btn.disabled = true;
+        await calibrationService.zeroEthyleneSensor(id);
+        alert(`✅ Gas sensor [${id}] zero baseline saved (0.00 ppm) to Cloud Firestore.`);
         this.render();
       };
     });
@@ -195,7 +209,7 @@ class CalibrationPage {
 
         document.getElementById('cal-sensor-id').value = id;
         document.getElementById('cal-modal-title').textContent = `Calibrate: ${sensor.type} (${sensor.id})`;
-        document.getElementById('cal-unit-label').textContent = sensor.unit;
+        document.getElementById('cal-unit-label').textContent = sensor.unit || 'kg';
         document.getElementById('cal-reference-val').value = sensor.id.startsWith('loadcell') ? '20.0' : '1.0';
         document.getElementById('cal-offset-val').value = sensor.zeroOffset;
         document.getElementById('cal-factor-val').value = sensor.factor;
@@ -207,44 +221,54 @@ class CalibrationPage {
     // Save calibration
     const form = document.getElementById('cal-form');
     if (form) {
-      form.onsubmit = (e) => {
+      form.onsubmit = async (e) => {
         e.preventDefault();
+        const submitBtn = document.getElementById('save-cal-submit-btn');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Saving to Database...';
+        }
+
         const id = document.getElementById('cal-sensor-id').value;
         const refVal = Number(document.getElementById('cal-reference-val').value);
         const offset = Number(document.getElementById('cal-offset-val').value);
         const factor = Number(document.getElementById('cal-factor-val').value);
 
         if (id.startsWith('loadcell') && refVal > 0) {
-          calibrationService.calibrateWithKnownWeight(id, refVal);
+          await calibrationService.calibrateWithKnownWeight(id, refVal);
         } else {
-          calibrationService.saveSensorParams(id, { zeroOffset: offset, factor });
+          await calibrationService.saveSensorParams(id, { zeroOffset: offset, factor });
         }
 
         closeModal();
-        alert(`✅ Calibration saved for [${id}].`);
+        alert(`✅ Calibration saved for [${id}] to Cloud Firestore.`);
         this.render();
       };
     }
 
     // Reset buttons
     document.querySelectorAll('.reset-cal-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const id = btn.getAttribute('data-id');
         if (confirm(`Reset [${id}] to factory calibration parameters?`)) {
-          calibrationService.resetToFactory(id);
+          await calibrationService.resetToFactory(id);
           this.render();
         }
       };
     });
 
     // Tare all load cells
-    document.getElementById('tare-all-loadcells-btn')?.addEventListener('click', () => {
-      ['loadcell-z1', 'loadcell-z2', 'loadcell-z3'].forEach(id => calibrationService.tareLoadCell(id));
-      alert('✅ All 3 Storage Zone Load Cells tared to 0.00 kg.');
+    document.getElementById('tare-all-loadcells-btn')?.addEventListener('click', async () => {
+      for (const id of ['loadcell-z1', 'loadcell-z2', 'loadcell-z3']) {
+        await calibrationService.tareLoadCell(id);
+      }
+      alert('✅ All 3 Storage Zone Load Cells tared to 0.00 kg and saved to Cloud Firestore.');
       this.render();
     });
   }
 }
 
-const page = new CalibrationPage();
-page.init();
+document.addEventListener('DOMContentLoaded', () => {
+  const page = new CalibrationPage();
+  page.init();
+});
