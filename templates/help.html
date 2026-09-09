@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Farmer Help & Guide — QORA TECH{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom: 2rem;">
+  <h2 style="font-size: 1.8rem; color: #064e3b; margin-bottom: 2px;">Farmer Guide & Cold Storage Tips</h2>
+  <p style="color: var(--text-muted); font-size: 0.95rem;">
+    Simple, easy-to-follow rules to get the best shelf life and market prices for your vegetables.
+  </p>
+</div>
+
+<!-- 3 Zone Visual Guide -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+  
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 2px solid #86efac; padding: 1.5rem;">
+    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🥬 🥦 🥕</div>
+    <h3 style="font-size: 1.3rem; color: #065f46; margin-bottom: 0.5rem;">Zone 2: 0°C to 2°C (Center)</h3>
+    <p style="font-size: 0.9rem; color: #334155; line-height: 1.5;">
+      <strong>Best for:</strong> Cabbage, Cauliflower, Carrots, Spinach, Mustard Greens.<br>
+      <strong>Tip:</strong> Keep crates near center for maximum cooling. These vegetables love near freezing temperatures and 95%+ humidity.
+    </p>
+  </div>
+
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 2px solid #bae6fd; padding: 1.5rem;">
+    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🫘 🫑 🌿</div>
+    <h3 style="font-size: 1.3rem; color: #0284c7; margin-bottom: 0.5rem;">Zone 1: 2°C to 8°C</h3>
+    <p style="font-size: 0.9rem; color: #334155; line-height: 1.5;">
+      <strong>Best for:</strong> French Beans, Capsicum / Bell Peppers, Tender Pods.<br>
+      <strong>Tip:</strong> Do not freeze beans below 2°C or they will turn brown. Zone 1 provides gentle cool air.
+    </p>
+  </div>
+
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 2px solid #fde68a; padding: 1.5rem;">
+    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🍅 🌶 🥔 🫚</div>
+    <h3 style="font-size: 1.3rem; color: #b45309; margin-bottom: 0.5rem;">Zone 3: 8°C to 15°C</h3>
+    <p style="font-size: 0.9rem; color: #334155; line-height: 1.5;">
+      <strong>Best for:</strong> Tomatoes, Green Chilli, Potatoes, Ginger, Bhut Jolokia.<br>
+      <strong>Tip:</strong> Never put tomatoes or ginger in 0°C (they will spoil with chilling injury). Keep them in Zone 3!
+    </p>
+  </div>
+
+</div>
+
+<!-- FAQ & Advice Cards -->
+<div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 2rem; box-shadow: var(--shadow-sm);">
+  <h3 style="font-size: 1.35rem; color: #0f172a; margin-bottom: 1.25rem;">Frequently Asked Questions</h3>
+
+  <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+    <div>
+      <h4 style="font-size: 1.05rem; color: #064e3b; margin-bottom: 4px;">❓ When should I use 1-Zone Mode instead of 3-Zone Mode?</h4>
+      <p style="font-size: 0.92rem; color: #475569;">
+        Use <strong>1-Zone Mode</strong> when you have a bumper harvest of a single crop (e.g. 500 kg of cabbage) and you want the entire cold storage room to maintain one uniform temperature.
+      </p>
+    </div>
+
+    <div>
+      <h4 style="font-size: 1.05rem; color: #064e3b; margin-bottom: 4px;">❓ What should I do if a "High Temperature" warning appears?</h4>
+      <p style="font-size: 0.92rem; color: #475569;">
+        1. Check that the door is firmly closed and the magnetic seal is airtight.<br>
+        2. Verify that the solar panel breakers are turned on.<br>
+        3. Make sure crates are not blocking the cold air vents from the center chamber.
+      </p>
+    </div>
+
+    <div>
+      <h4 style="font-size: 1.05rem; color: #064e3b; margin-bottom: 4px;">❓ How does the UV-C and TiO₂ system help?</h4>
+      <p style="font-size: 0.92rem; color: #475569;">
+        The UV-C light runs automatically for 15 minutes to kill airborne bacteria and mould spores. Combined with the titanium dioxide (TiO₂) filter, it keeps the storage air clean and neutralizes spoilage gases.
+      </p>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

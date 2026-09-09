@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Portal — QORA TECH Solar Smart Cold Storage{% endblock %}
+
+{% block content %}
+
+<!-- Admin Header Bar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h2 style="font-size: 1.8rem; color: #064e3b; margin-bottom: 2px;">Engineering Admin & Cloud Management Portal</h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Farmer account approvals, rental contracts, live hardware telemetry, crop advisory dispatch, and cloud configuration.
+    </p>
+  </div>
+</div>
+
+<!-- TOP ADMIN KPI OVERVIEW (Section 17) -->
+<div class="kpi-glance-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 1.75rem;">
+  <div class="kpi-card" style="padding: 1rem;">
+    <div class="kpi-label">TOTAL FARMERS</div>
+    <div class="kpi-number" style="font-size: 1.8rem; color: #065f46;">{{ farmers|length }}</div>
+    <div class="kpi-subtext">Registered in NER</div>
+  </div>
+
+  <div class="kpi-card" style="padding: 1rem; border-color: #f59e0b;">
+    <div class="kpi-label" style="color: #b45309;">PENDING APPROVAL</div>
+    <div class="kpi-number" style="font-size: 1.8rem; color: #d97706;">{{ pending_farmers|length }}</div>
+    <div class="kpi-subtext">Awaiting Review</div>
+  </div>
+
+  <div class="kpi-card" style="padding: 1rem;">
+    <div class="kpi-label">RENTAL USERS</div>
+    <div class="kpi-number" style="font-size: 1.8rem; color: #0284c7;">
+      {{ farmers | selectattr('account_type', 'equalto', 'RENTAL') | list | length }}
+    </div>
+    <div class="kpi-subtext">Monthly Contracts</div>
+  </div>
+
+  <div class="kpi-card" style="padding: 1rem;">
+    <div class="kpi-label">PURCHASED USERS</div>
+    <div class="kpi-number" style="font-size: 1.8rem; color: #7c3aed;">
+      {{ farmers | selectattr('account_type', 'equalto', 'PURCHASED') | list | length }}
+    </div>
+    <div class="kpi-subtext">Outright Units</div>
+  </div>
+
+  <div class="kpi-card" style="padding: 1rem;">
+    <div class="kpi-label">ACTIVE STORAGE</div>
+    <div class="kpi-number" style="font-size: 1.8rem; color: #059669;">2 Units</div>
+    <div class="kpi-subtext">ST-NER-01 / 02</div>
+  </div>
+
+  <div class="kpi-card" style="padding: 1rem;">
+    <div class="kpi-label">ONLINE DEVICES</div>
+    <div class="kpi-number" style="font-size: 1.8rem; color: #059669;">100%</div>
+    <div class="kpi-subtext">ESP32 & Firebase</div>
+  </div>
+</div>
+
+<!-- SECTION 1: FARMER REGISTRATION APPROVAL WORKFLOW -->
+<section style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+    <div>
+      <h3 style="font-size: 1.3rem; color: #0f172a;">Farmer Account Approvals & User Management</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Review incoming farmer registrations. Only <code>approved</code> accounts can access cold-storage dashboards.
+      </p>
+    </div>
+    <span class="badge-safe">Role: System Administrator</span>
+  </div>
+
+  <div class="admin-table-wrapper">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Farmer Name</th>
+          <th>Email Address</th>
+          <th>Location</th>
+          <th>Account Type</th>
+          <th>Status</th>
+          <th>Plan Details</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in farmers %}
+        <tr>
+          <td>
+            <strong>{{ f.name }}</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ f.phone }}</div>
+          </td>
+          <td>{{ f.email }}</td>
+          <td>{{ f.village }}, {{ f.district }} ({{ f.state }})</td>
+          <td>
+            {% if f.account_type == 'RENTAL' %}
+              <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.78rem;">RENTAL</span>
+            {% else %}
+              <span style="background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.78rem;">PURCHASED</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if f.account_status == 'approved' %}
+              <span class="badge-safe">APPROVED</span>
+            {% elif f.account_status == 'pending' %}
+              <span class="badge-warning" style="background: #fef3c7; color: #b45309; border-color: #fde68a;">PENDING APPROVAL</span>
+            {% elif f.account_status == 'rejected' %}
+              <span class="badge-alert">REJECTED</span>
+            {% else %}
+              <span class="badge-alert" style="background: #f1f5f9; color: #64748b;">SUSPENDED</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.82rem;">
+            {% if f.account_type == 'RENTAL' and f.rental_details %}
+              <strong>₹{{ f.rental_details.monthly_price }}</strong> / mo<br>
+              <span style="color: var(--text-muted);">Until {{ f.rental_details.end_date }}</span>
+            {% elif f.purchase_details %}
+              <strong>{{ f.purchase_details.storage_unit }}</strong><br>
+              <span style="color: var(--text-muted);">Warranty: {{ f.purchase_details.warranty }}</span>
+            {% else %}
+              --
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              {% if f.account_status != 'approved' %}
+                <button type="button" class="btn-primary-farmer" style="padding: 4px 10px; font-size: 0.75rem;" onclick="updateFarmerStatus('{{ f.id }}', 'approved')">
+                  APPROVE
+                </button>
+              {% endif %}
+              {% if f.account_status != 'rejected' %}
+                <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: #b91c1c; border-color: #fca5a5;" onclick="updateFarmerStatus('{{ f.id }}', 'rejected')">
+                  REJECT
+                </button>
+              {% endif %}
+              {% if f.account_status == 'approved' %}
+                <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: #64748b;" onclick="updateFarmerStatus('{{ f.id }}', 'suspended')">
+                  SUSPEND
+                </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 2: LIVE HARDWARE ACTUATORS & STORAGE CONFIGURATION -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+  
+  <!-- Left: Live Hardware Actuator States -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 style="font-size: 1.25rem; color: #0f172a;">Live Actuator & Relay Supervision</h3>
+      <span class="badge-safe">ESP32 & Firebase Synced</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+      <!-- AC Compressor -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+          <span>CENTRAL AC COMPRESSOR</span>
+          <span class="badge-safe">ON</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #0369a1; margin: 4px 0;">1.25 kW</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Relay Pin: GPIO 26 • Controlled by Center Chamber (Zone 2) Hysteresis</div>
+      </div>
+
+      <!-- UV-C Lamp -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+          <span>UV-C + TiO₂ SYSTEM</span>
+          <span class="badge-safe" style="background: #f3e8ff; color: #7c3aed; border-color: #c084fc;">ACTIVE</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #7c3aed; margin: 4px 0;">Sanitizing</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Relay Pin: GPIO 27 • 15 min cycle every 4 hours</div>
+      </div>
+
+      <!-- Solenoid 1 -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+          <span>SOLENOID VALVE 1 (ZONE 1)</span>
+          <span class="badge-safe">OPEN</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #059669; margin: 4px 0;">OPEN</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Relay Pin: GPIO 14 • Flowing chilled air to Zone 1</div>
+      </div>
+
+      <!-- Solenoid 2 -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+          <span>SOLENOID VALVE 2 (ZONE 3)</span>
+          <span class="badge-warning" style="background: #f1f5f9; color: #64748b; border-color: #cbd5e1;">CLOSED</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #64748b; margin: 4px 0;">CLOSED</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Relay Pin: GPIO 12 • Zone 3 at target temperature (9.8°C)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Storage Mode Cloud Settings -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <h3 style="font-size: 1.25rem; color: #0f172a; margin-bottom: 0.5rem;">Storage Mode Controller</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Changes here sync to Firestore <code>storageUnits/ST-NER-01</code> and update both farmer UI and ESP32 polling.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Storage Mode:</label>
+        <select id="adminStorageModeSelect" class="form-select" onchange="adminUpdateStorageMode(this.value)">
+          <option value="THREE_ZONE">THREE_ZONE (3 Dedicated Chambers)</option>
+          <option value="ONE_ZONE">ONE_ZONE (Single Unified Chamber)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Temperature Hysteresis (Anti-Short Cycling):</label>
+        <input type="text" class="form-input" value="±0.8 °C" readonly style="background: #f1f5f9;">
+      </div>
+    </div>
+
+    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-sm); padding: 10px; font-size: 0.82rem; color: #065f46;">
+      🔒 <strong>Note:</strong> Software configuration is strictly separated from physical ESP32 firmware loop.
+    </div>
+  </div>
+
+</div>
+
+<!-- SECTION 3: CREATE & DISPATCH FARMER RECOMMENDATION -->
+<section style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.75rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+  <div style="margin-bottom: 1.25rem;">
+    <h3 style="font-size: 1.4rem; color: #064e3b; margin-bottom: 2px;">Dispatch Crop Storage Recommendation</h3>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+      Send targeted agronomical advice to a specific farmer's unit based on seasonal harvest trends.
+    </p>
+  </div>
+
+  <form id="recommendationForm" onsubmit="handleSendRecommendation(event)">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 1rem;">
+      <div class="form-group">
+        <label class="form-label" for="recFarmer">Select Farmer *</label>
+        <select id="recFarmer" class="form-select" required>
+          {% for farmer in farmers %}
+            <option value="{{ farmer.id }}">{{ farmer.name }} ({{ farmer.village }}, {{ farmer.district }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="recSeason">Harvest Season *</label>
+        <select id="recSeason" class="form-select" required>
+          <option value="Winter / Rabi">Winter / Rabi</option>
+          <option value="Summer / Zaid">Summer / Zaid</option>
+          <option value="Monsoon / Kharif">Monsoon / Kharif</option>
+          <option value="Post-Harvest">Post-Harvest Glut</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="recCrop">Select NER Crop *</label>
+        <select id="recCrop" class="form-select" onchange="onAdminCropSelect(this.value)" required>
+          {% for crop in crops %}
+            <option value="{{ crop.id }}" data-zone="{{ crop.recommended_zone }}" data-temp="{{ crop.min_temp }}–{{ crop.max_temp }}°C" data-humidity="{{ crop.min_humidity }}–{{ crop.max_humidity }}%">
+              {{ crop.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="recZone">Recommended Zone</label>
+        <input type="text" id="recZone" class="form-input" value="ZONE 2" readonly style="background: #f8fafc;">
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 1rem;">
+      <div class="form-group">
+        <label class="form-label" for="recTemp">Target Temperature Range</label>
+        <input type="text" id="recTemp" class="form-input" value="0–2°C">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="recHumidity">Target Relative Humidity</label>
+        <input type="text" id="recHumidity" class="form-input" value="95–98%">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="recMessage">Agronomy Advisory Message for Farmer *</label>
+      <textarea id="recMessage" class="form-input" rows="3" required placeholder="e.g. Recommended storage conditions for your current winter harvest to preserve freshness and reduce weight loss.">Suitable for the current season and your cold storage condition. Store in Zone 2 to maintain firmness and avoid leaf yellowing.</textarea>
+    </div>
+
+    <button type="submit" class="btn-primary-farmer" style="padding: 12px 28px;">
+      📤 Send to Specific Farmer
+    </button>
+  </form>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function updateFarmerStatus(farmerId, status) {
+  try {
+    const res = await fetch('/api/admin/farmer/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ farmer_id: farmerId, status: status })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(`Farmer account status changed to ${status.toUpperCase()}`);
+      location.reload();
+    }
+  } catch (err) {
+    alert("Status update failed");
+  }
+}
+
+async function adminUpdateStorageMode(mode) {
+  try {
+    const res = await fetch('/api/storage/mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: mode })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(`Storage mode updated to ${mode}`);
+    }
+  } catch(e) {}
+}
+
+function onAdminCropSelect(cropId) {
+  const sel = document.getElementById('recCrop');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('recZone').value = opt.getAttribute('data-zone') || 'ZONE 2';
+  document.getElementById('recTemp').value = opt.getAttribute('data-temp') || '0–2°C';
+  document.getElementById('recHumidity').value = opt.getAttribute('data-humidity') || '95–98%';
+}
+
+async function handleSendRecommendation(e) {
+  e.preventDefault();
+  const farmer_id = document.getElementById('recFarmer').value;
+  const season = document.getElementById('recSeason').value;
+  const crop_id = document.getElementById('recCrop').value;
+  const recommended_zone = document.getElementById('recZone').value;
+  const target_temp = document.getElementById('recTemp').value;
+  const target_humidity = document.getElementById('recHumidity').value;
+  const message = document.getElementById('recMessage').value;
+
+  const res = await fetch('/api/recommendations/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ farmer_id, season, crop_id, recommended_zone, target_temp, target_humidity, message })
+  });
+  const data = await res.json();
+  if (data.success) {
+    alert('✓ Recommendation dispatched to the farmer dashboard!');
+  }
+}
+</script>
+{% endblock %}

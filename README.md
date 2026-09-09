@@ -1,138 +1,181 @@
-# Solar Smart Cold Storage — IoT Sensor + AI Spoilage Prediction Platform
+# QORA TECH — Solar Smart Cold Storage
+### Smart Mini Cold-Storage System for Farmers in the North Eastern Region (NER) of India
 
-[![GitHub Pages Deployment](https://img.shields.io/badge/Deployable-GitHub%20Pages-brightgreen)](https://pages.github.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Frontend](https://img.shields.io/badge/Stack-HTML5%20%7C%20CSS3%20%7C%20Vanilla%20ES6%2B-emerald)](https://developer.mozilla.org/)
-[![Firebase CDN](https://img.shields.io/badge/Backend-Firebase%20RTDB%20%2B%20Firestore-orange)](https://firebase.google.com/)
-[![ESP32 FreeRTOS](https://img.shields.io/badge/Firmware-ESP32%20Dual--Core%20C%2B%2B-red)](https://www.espressif.com/)
-
-An enterprise-grade, solar-powered agricultural post-harvest platform designed for **Three-Zone Smart Cold Storage**. Built with pure vanilla HTML5/CSS3/ES6+ JavaScript, Chart.js, Lucide Icons, jsPDF, and SheetJS for direct deployment to **GitHub Pages** without requiring a traditional backend server.
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Backend-Flask-green.svg)](https://flask.palletsprojects.com/)
+[![ESP32](https://img.shields.io/badge/Hardware-ESP32-red.svg)](https://www.espressif.com/en/products/socs/esp32)
+[![Firebase](https://img.shields.io/badge/Cloud-Firestore-orange.svg)](https://firebase.google.com/)
 
 ---
 
-## 1. System Architecture
+## 1. Project Objective
+
+Farmers in the North Eastern Region (NER) of India face high post-harvest losses (up to 35–40%) for perishable crops such as cabbage, cauliflower, tomatoes, king chillies (Bhut Jolokia), and beans due to erratic grid power and tropical humidity.
+
+**QORA TECH** is a decentralized, solar-powered smart mini cold-storage solution engineered to provide:
+1. **100% Solar-Powered Preservation:** 2.4 kW Photovoltaic array backed by 48V / 10 kWh LiFePO4 battery storage.
+2. **Modular Flexible Multi-Zone Operation:** Configurable **3-Zone Mode** (0–2°C, 2–8°C, 8–15°C) and **1-Zone Mode** (single uniform room).
+3. **Microbial Air Treatment:** Automated UV-C + $\text{TiO}_2$ photocatalytic sanitization to eliminate mould spores and neutralize spoilage ethylene gases.
+4. **Farmer-Centric Simplicity:** Large visual indicators, real crop photography, simple English status badges (SAFE, GOOD, WARNING), and zero technical jargon on the farmer view.
+5. **Agronomist Advisory Loop:** Admin portal allowing agronomists to send targeted harvest recommendations directly to specific farmers.
+
+---
+
+## 2. System Architecture & Cooling Distribution
 
 ```
-                SOLAR PV ARRAY (4.8 kWp)
-                           ↓
-                   BATTERY BANK (48V)
-                           ↓
-                ESP32 MASTER CONTROLLER
-                           ↓
-        ┌──────────────────┼──────────────────┐
-        ↓                  ↓                  ↓
-     ZONE 1             ZONE 2             ZONE 3
-   (10–13°C)           (0–2°C)            (0–8°C)
-  Tropical Crops      Deep Chill         Temperate
-  • SHT31 Temp       • SHT31 Temp       • SHT31 Temp
-  • SHT31 Hum        • SHT31 Hum        • SHT31 Hum
-  • HX711 Weight     • HX711 Weight     • HX711 Weight
-  • Ethylene Probe   • Ethylene Probe   • Ethylene Probe
-        └──────────────────┬──────────────────┘
-                           ↓ (Wi-Fi / REST / WebSocket)
-                 FIREBASE REALTIME DB
-                           ↓
-                  WEB APPLICATION (SPA)
-        ┌──────────────────┴──────────────────┐
-        ↓                                     ↓
-   REAL-TIME MONITORING                  AI PREDICTION ENGINE
-   • Independent Zone Gauges             • Multi-Parameter Scoring
-   • Continuous Transpiration Loss       • Freshness Score (0-100)
-   • Ethylene Acceleration (ppm)         • Spoilage Risk Categorization
-   • Solar Power & Battery SoC           • Est. Remaining Shelf Life
-                                              ↓
-                                      SMART SELLING QUEUE
-                                      • Quality-Ranked Dispatch
-                                      • SELL FIRST / SELL SOON
+                                  +---------------------------------------+
+                                  |         SOLAR PV ARRAY (2.4 kW)       |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |    HYBRID INVERTER / MPPT & BATTERY   |
+                                  |          (48V / 10 kWh LiFePO4)       |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |        AC / CENTRAL COOLING UNIT      |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      v
+                                    [ ZONE 2: CENTER COOLING CHAMBER ]
+                                            (0°C – 2°C, UV-C/TiO2)
+                                                /           \
+                                               /             \
+                                [ SOLENOID VALVE 1 ]     [ SOLENOID VALVE 2 ]
+                                         |                        |
+                                         v                        v
+                            [ ZONE 1: 2°C – 8°C ]    [ ZONE 3: 8°C – 15°C ]
+                            (Leafy, Berries, etc.)   (Potato, Tomato, etc.)
+                                         ^                        ^
+                                         +-----------+------------+
+                                                     |
+                                                     v
+                                  +---------------------------------------+
+                                  |    ESP32 CONTROLLER + SENSORS & RELAYS|
+                                  |    (Temp, Humidity, Load Cell, Gas)   |
+                                  +-------------------+-------------------+
+                                                      |
+                                             WiFi / REST / USB
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |        FLASK BACKEND & SIMULATION     |
+                                  |        (Thermodynamics, Hysteresis)   |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      v
+                             +------------------------+-----------------------+
+                             |                                                |
+                             v                                                v
+              +-------------------------------+               +-------------------------------+
+              |        FARMER DASHBOARD       |               |          ADMIN PORTAL         |
+              |  - Visual 3-Zone / 1-Zone     |               |  - System & Telemetry Monitor |
+              |  - Simple Crop Cards (Photos) |               |  - Solenoids & AC Control     |
+              |  - Battery Runtime & Solar    |               |  - Crop Recommendation Engine |
+              |  - Alerts & Recommendations   |               |  - Farmer & Unit Management   |
+              +-------------------------------+               +-------------------------------+
 ```
 
 ---
 
-## 2. Three-Zone Target Specifications
+## 3. Technology Stack
 
-| Parameter | Zone 1 (Tropical) | Zone 2 (Deep Chill) | Zone 3 (Temperate) |
-| :--- | :--- | :--- | :--- |
-| **Target Temperature** | **10.0 – 13.0°C** | **0.0 – 2.0°C** | **0.0 – 8.0°C** |
-| **Optimal Humidity** | 85 – 95 %RH | 90 – 98 %RH | 88 – 95 %RH |
-| **Representative Crops** | Tomato, Potato, Chilli, Mango | Apple, Carrot, Cabbage, Strawberry | Green Beans, Peas, Cucumber |
-| **Key Risk Mitigated** | Chilling injury / sunken pits | Respiration & decay slowing | Ethylene climacteric acceleration |
-| **Instrumentation** | SHT31, HX711, Analog C2H4 | SHT31, HX711, Analog C2H4 | SHT31, HX711, UART C2H4 |
+- **Frontend:** HTML5, Vanilla CSS3 (Custom Agricultural Design System, Glassmorphism, Micro-animations), Vanilla JavaScript (ES6+), Chart.js.
+- **Backend:** Python 3.11+, Flask, RESTful APIs, Flask-CORS.
+- **Database & Cloud:** Google Cloud Firestore / Firebase Auth (with automatic in-memory seed datastore fallback).
+- **Hardware Layer:** ESP32 Microcontroller (C++/Arduino), DHT22 / DS18B20 digital probes, HX711 Load Cell, MQ-137 Ethylene gas sensor, Optocoupled relays.
 
 ---
 
-## 3. Key Platform Capabilities
+## 4. Key Features
 
-### A. Gated User Flow & Admin Approval
-* Role-based registration (`Farmer`, `Operator`, `Technician`, `Researcher`).
-* New accounts default to `status = "pending"` and are strictly gated from monitoring until approved by an administrator in the **Admin Approval Panel**.
+### A. Dual Configurable Storage Modes
+- **3-Zone Mode:**
+  - **Zone 1 (2–8°C):** French beans, capsicum, berries.
+  - **Zone 2 (0–2°C Center Chamber):** Cabbage, cauliflower, leafy greens, carrots (primary cooling hub).
+  - **Zone 3 (8–15°C):** Tomatoes, green chillies, ginger, table potatoes, Bhut Jolokia.
+- **1-Zone Mode:**
+  - Reconfigures all solenoid dampers to open and uses the entire storage room for a single bulk crop at a configurable target temperature (e.g. 1.5°C).
 
-### B. AI Spoilage & Shelf-Life Prediction Engine (`prediction-engine.js`)
-* Decoupled biological scoring engine evaluating 5 distinct degradation dimensions:
-  1. *Thermal Stress* (Corridor deviation + temperature volatility)
-  2. *Moisture Stress* (Vapor pressure deficit & condensation risk)
-  3. *Weight Loss Velocity* (Transpiration rate measured by HX711 load cells)
-  4. *Ethylene Ripening Gas* (Concentration ppm + rising acceleration rate)
-  5. *Storage Longevity* (Cultivar baseline shelf life model)
-* Produces:
-  * **Freshness Score** (0–100%)
-  * **Spoilage Risk** (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`)
-  * **Estimated Remaining Shelf Life** (in Days/Hours)
-  * **Quality Trend** (`STABLE`, `DEGRADING`, `RAPID DECAY`)
-  * **Recommended Action** (`SAFE TO STORE`, `MONITOR CLOSELY`, `SELL SOON`, `SELL FIRST`)
-  * **Explainability Matrix** explaining exactly why the score changed.
+### B. Accurate Solar & Battery Math
+- **Battery Usable Energy:**
+  $$\text{Available Energy (kWh)} = 10.0\text{ kWh} \times \left(\frac{\text{SOC} - 10}{100}\right)$$
+- **Estimated Backup Runtime:**
+  $$\text{Backup Hours} = \frac{\text{Available Energy (kWh)}}{\text{Net Discharge Load (kW)}}$$
+- **Estimated Charging Time:**
+  $$\text{Charging Hours} = \frac{(100\% - \text{SOC}) \times 10.0\text{ kWh}}{(\text{Solar Input} - \text{Load}) \times \eta_{\text{eff}}}$$
 
-### C. Quality-Based Smart Selling
-* Real-time dynamic queue prioritizing produce batches based on urgency score.
-* Color-coded action badges: `SELL FIRST` (Red), `SELL SOON` (Amber), `SAFE TO STORE` (Emerald).
-
-### D. Sensor Calibration Suite
-* Tare zeroing and 2-point reference weight calibration for Zone 1-3 HX711 load cells.
-* Fresh-air baseline zeroing for electrochemical ethylene gas sensors.
-
-### E. Solar Energy & Power Management
-* Real-time monitoring of Solar PV wattage, 48V Battery Bank SoC, Compressor load, and Power Modes (`SOLAR_PRIORITY`, `NORMAL`, `ENERGY_SAVING`, `CRITICAL`).
-
-### F. Reports & Multi-Format Exports
-* One-click automated export to **PDF** (via jsPDF + AutoTable) and **Excel / CSV** (via SheetJS).
-
-### G. Virtual ESP32 Hardware Simulator
-* Built-in interactive simulator with selectable anomaly scenarios (*Normal, Solar Drop, Ethylene Surge, Temp Spike, Rapid Loss*) for standalone testing on GitHub Pages.
+### C. Temperature Control Hysteresis
+Implements a $\pm 0.8^\circ\text{C}$ deadband around target temperatures to prevent rapid AC compressor on/off short cycling, saving compressor mechanical life and inverter surge currents.
 
 ---
 
-## 4. Complete ESP32 Modular Firmware (`/esp32`)
+## 5. Quick Start & Local Execution
 
-* [`esp32_main.ino`](file:///esp32/esp32_main.ino): FreeRTOS multi-core task scheduler.
-* [`wifi_manager.ino`](file:///esp32/wifi_manager.ino): Non-blocking Wi-Fi auto-reconnection.
-* [`firebase_manager.ino`](file:///esp32/firebase_manager.ino): Realtime Database telemetry uploader.
-* [`temperature_sensor.ino`](file:///esp32/temperature_sensor.ino): Zone 1-3 temperature acquisition (SHT31 / DS18B20).
-* [`humidity_sensor.ino`](file:///esp32/humidity_sensor.ino): Zone 1-3 relative humidity measurement.
-* [`load_cell_manager.ino`](file:///esp32/load_cell_manager.ino): HX711 24-bit ADC, tare & digital moving-average filter.
-* [`ethylene_sensor.ino`](file:///esp32/ethylene_sensor.ino): Modular gas abstraction (ADC / UART / I2C / Modbus).
-* [`zone_manager.ino`](file:///esp32/zone_manager.ino): Zone coordination and status thresholds.
-* [`telemetry_manager.ino`](file:///esp32/telemetry_manager.ino): JSON serialization and timestamping.
-* [`prediction_support.ino`](file:///esp32/prediction_support.ino): Autonomous local edge refrigeration safeguard (100% offline protection).
-* [`rs485_modbus.ino`](file:///esp32/rs485_modbus.ino): Solar inverter Modbus RTU telemetry.
+### Prerequisites
+- Python 3.9+ installed.
+
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/your-username/qora-tech-cold-storage.git
+cd qora-tech-cold-storage
+pip install -r requirements.txt
+```
+
+### 2. Run the Application
+```bash
+python app.py
+```
+Open your browser and navigate to:
+```
+http://127.0.0.1:5000
+```
 
 ---
 
-## 5. Deployment on GitHub Pages
+## 6. Demo Mode vs Live Hardware Stream
 
-1. Push this repository to GitHub:
+The application includes an **Assessment Demo Engine** (`simulation.py`):
+- Click **"DEMO MODE ON"** in the top header to toggle between live ESP32 ingestion and the physics simulator.
+- Use the **Admin Portal** demo anomaly buttons to trigger:
+  - ⚠ **High Temperature Rise in Zone 3** (records failure duration in minutes).
+  - ⚠ **Solar / Grid Power Failure** (activates LiFePO4 battery backup).
+  - ⚠ **Sensor Disconnect** (demonstrates fail-safe solenoid locking).
+  - ✓ **Reset to Normal**.
+
+---
+
+## 7. ESP32 Hardware Integration
+
+The sketch is located in `esp32_firmware/qora_cold_storage_esp32.ino`:
+1. Open the `.ino` sketch in Arduino IDE.
+2. Update `WIFI_SSID`, `WIFI_PASS`, and your local Flask `SERVER_BASE_URL`.
+3. Flash to an ESP32 Development Board.
+4. The ESP32 will periodically poll `/api/hardware/config` and push live readings to `/api/hardware/telemetry`.
+
+---
+
+## 8. Security & Firebase Setup
+
+For production cloud deployment:
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com/).
+2. Generate a Private Key (`serviceAccountKey.json`).
+3. Set the environment variable:
    ```bash
-   git init
-   git add .
-   git commit -m "Deploy Solar Smart Cold Storage platform"
-   git branch -M main
-   git remote add origin https://github.com/<your-username>/<repo-name>.git
-   git push -u origin main
+   export FIREBASE_CREDENTIALS_PATH=serviceAccountKey.json
    ```
-2. In your GitHub repository, go to **Settings** &rarr; **Pages**.
-3. Under **Branch**, select `main` and root directory `/ (root)`, then click **Save**.
-4. Your site will be published at `https://<your-username>.github.io/<repo-name>/`.
+> **Security Notice:** Never commit `firebase_credentials.json`, `serviceAccountKey.json`, or `.env` to GitHub.
 
 ---
 
-## 6. Scientific & Food Safety Disclaimer
+## 9. Future AI & IoT Roadmap
 
-*The AI prediction algorithms and freshness indicators provided by this platform are computational estimation models based on environmental sensor trends and biological produce degradation literature. They are designed for post-harvest logistics decision support and must not be interpreted as certified laboratory food-safety determinations.*
+- **Computer Vision Spoilage Detection:** Edge camera running lightweight YOLOv8-Nano to inspect outer vegetable leaves for browning or rot.
+- **Dynamic Market Price Predictive Dispatch:** Forecasting NER mandi wholesale prices to recommend optimal storage release dates.
+- **LoRaWAN Mesh:** Long-range wireless telemetry for remote hill farms in Arunachal Pradesh, Meghalaya, and Nagaland without cellular coverage.
+
+---
+Developed for **North Eastern Region (NER) Agricultural Advancement** • **QORA TECH**

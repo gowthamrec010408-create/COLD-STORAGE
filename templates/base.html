@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}QORA TECH — Solar Smart Cold Storage{% endblock %}</title>
+  <meta name="description" content="Solar-powered smart mini cold-storage system designed for farmers in the North Eastern Region of India.">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Top Main Header with Fixed Branding -->
+  <header class="main-header">
+    <div class="brand-wrapper">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="QORA TECH Logo" class="brand-logo-img">
+      <div class="brand-text">
+        <a href="{{ url_for('farmer_dashboard') if session.get('user_role') != 'admin' else url_for('admin_portal') }}">
+          <h1 class="brand-title">QORA TECH</h1>
+          <span class="brand-subtitle">Solar Smart Cold Storage</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Live Cloud Sync Indicator -->
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #a7f3d0; font-weight: 600; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 20px;">
+        <span class="pulse-dot"></span>
+        <span>Firebase Cloud Sync</span>
+      </div>
+
+      <!-- User Profile Pill in Header -->
+      <div class="user-badge" style="background: rgba(0,0,0,0.2); padding: 4px 12px; border-radius: 20px;">
+        <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.85rem;">{{ user.name[0] if user and user.name else 'U' }}</div>
+        <div>
+          <div style="font-weight: 700; font-size: 0.85rem; color: #ffffff; line-height: 1.1;">{{ user.name if user else 'User' }}</div>
+          <div style="font-size: 0.72rem; color: #a7f3d0;">
+            {{ 'ADMIN' if session.get('user_role') == 'admin' else 'FARMER' }} • {{ user.village if user and user.village else 'Guwahati Hub' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Logout Button (No direct switch; strictly logs out to login) -->
+      <a href="{{ url_for('logout') }}" class="role-switcher-btn" style="background: rgba(239, 68, 68, 0.25); border-color: #f87171; color: #ffffff;" title="Logout from account">
+        🚪 Logout
+      </a>
+    </div>
+  </header>
+
+  <!-- Authenticated Shell with Left Sidebar Layout -->
+  <div class="app-shell">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar-nav-container">
+      <div>
+        {% if session.get('user_role') == 'admin' %}
+          <!-- Admin Profile Card -->
+          <div class="sidebar-user-box" style="background: linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border-color: #ddd6fe;">
+            <div class="sidebar-user-avatar" style="background: linear-gradient(135deg, #4c1d95, #7c3aed);">A</div>
+            <div>
+              <div style="font-weight: 800; font-size: 0.95rem; color: #4c1d95; line-height: 1.1;">{{ user.name if user else 'Dr. Subhash Sarma' }}</div>
+              <div style="font-size: 0.75rem; color: #6d28d9;">Guwahati Research Hub</div>
+              <div style="margin-top: 4px;">
+                <span style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem;">ADMINISTRATOR</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sidebar-section-title">Admin Management</div>
+          <nav class="sidebar-menu">
+            <a href="{{ url_for('admin_portal') }}" class="sidebar-item {% if request.path == '/admin' %}active{% endif %}">
+              <span class="sidebar-item-icon">📊</span>
+              <span>Admin Dashboard</span>
+            </a>
+            <a href="{{ url_for('crops_catalog') }}" class="sidebar-item {% if request.path == '/crops' %}active{% endif %}">
+              <span class="sidebar-item-icon">🥬</span>
+              <span>NER Crop Database</span>
+            </a>
+            <a href="{{ url_for('power_page') }}" class="sidebar-item {% if request.path == '/power' %}active{% endif %}">
+              <span class="sidebar-item-icon">⚡</span>
+              <span>Power & Solar Grid</span>
+            </a>
+            <a href="{{ url_for('history_page') }}" class="sidebar-item {% if request.path == '/history' %}active{% endif %}">
+              <span class="sidebar-item-icon">📈</span>
+              <span>History Analytics</span>
+            </a>
+            <a href="{{ url_for('devices_page') }}" class="sidebar-item {% if request.path == '/devices' %}active{% endif %}">
+              <span class="sidebar-item-icon">📡</span>
+              <span>Hardware & Network</span>
+            </a>
+            <a href="{{ url_for('help_page') }}" class="sidebar-item {% if request.path == '/help' %}active{% endif %}">
+              <span class="sidebar-item-icon">ℹ</span>
+              <span>Storage Guidelines</span>
+            </a>
+          </nav>
+        {% else %}
+          <!-- Farmer Profile Card -->
+          <div class="sidebar-user-box">
+            <div class="sidebar-user-avatar">{{ user.name[0] if user and user.name else 'F' }}</div>
+            <div>
+              <div style="font-weight: 800; font-size: 0.95rem; color: #064e3b; line-height: 1.1;">{{ user.name if user else 'Farmer' }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ user.village if user else 'Hajo' }}, {{ user.district if user else 'Kamrup' }}</div>
+              <div style="margin-top: 4px;">
+                {% if user and user.account_type == 'RENTAL' %}
+                  <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem;">RENTAL (₹{{ user.rental_price or 5000 }}/mo)</span>
+                {% else %}
+                  <span style="background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.72rem;">PURCHASED UNIT</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="sidebar-section-title">Farmer Navigation</div>
+          <nav class="sidebar-menu">
+            <a href="{{ url_for('farmer_dashboard') }}" class="sidebar-item {% if request.path == '/dashboard' or request.path == '/farmer' or request.path == '/' %}active{% endif %}">
+              <span class="sidebar-item-icon">🏠</span>
+              <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('crops_catalog') }}" class="sidebar-item {% if request.path == '/crops' %}active{% endif %}">
+              <span class="sidebar-item-icon">🥬</span>
+              <span>My Crops</span>
+            </a>
+            <a href="{{ url_for('power_page') }}" class="sidebar-item {% if request.path == '/power' %}active{% endif %}">
+              <span class="sidebar-item-icon">⚡</span>
+              <span>Power Management</span>
+            </a>
+            <a href="{{ url_for('history_page') }}" class="sidebar-item {% if request.path == '/history' %}active{% endif %}">
+              <span class="sidebar-item-icon">📊</span>
+              <span>History & Analytics</span>
+            </a>
+            <a href="{{ url_for('devices_page') }}" class="sidebar-item {% if request.path == '/devices' %}active{% endif %}">
+              <span class="sidebar-item-icon">📶</span>
+              <span>Device Status</span>
+            </a>
+            <a href="{{ url_for('help_page') }}" class="sidebar-item {% if request.path == '/help' %}active{% endif %}">
+              <span class="sidebar-item-icon">ℹ</span>
+              <span>Farmer Help</span>
+            </a>
+          </nav>
+        {% endif %}
+      </div>
+
+      <!-- Sidebar Bottom Section with Logout -->
+      <div class="sidebar-bottom">
+        <a href="{{ url_for('logout') }}" class="sidebar-logout-btn">
+          <span style="font-size: 1.1rem;">🚪</span>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- MAIN RIGHT CONTENT CONTAINER -->
+    <main class="app-main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="main-footer">
+    <div>
+      <span class="footer-brand">QORA TECH</span> — Solar Smart Cold Storage for North Eastern Region (NER) Farmers
+    </div>
+    <div style="margin-top: 4px; font-size: 0.78rem;">
+      Modular Multi-Zone Thermal Architecture • ESP32 Controller • LiFePO4 Energy Storage • UV-C Treatment
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

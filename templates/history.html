@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Storage History & Analytics — QORA TECH{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h2 style="font-size: 1.8rem; color: #064e3b; margin-bottom: 2px;">Storage History & Telemetry Analytics</h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Historical trends of temperatures, humidity, solar generation, and battery charge cycles.
+    </p>
+  </div>
+
+  <!-- Timeframe Selector -->
+  <div class="mode-selector-buttons" style="background: #ffffff; border: 1px solid var(--border-color);">
+    <button type="button" class="mode-btn active" id="btnHistoryToday" onclick="loadHistoryData('today')">
+      📅 Today (24 Hours)
+    </button>
+    <button type="button" class="mode-btn" id="btnHistory7Days" onclick="loadHistoryData('7days')">
+      📊 7 Days
+    </button>
+    <button type="button" class="mode-btn" id="btnHistory30Days" onclick="loadHistoryData('30days')">
+      📈 30 Days
+    </button>
+  </div>
+</div>
+
+<!-- Grid of Chart.js Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 1.5rem;">
+  
+  <!-- 1. Temperatures by Zone -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div>
+        <h3 style="font-size: 1.15rem; color: #0f172a;">Temperature Profiles (°C)</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Zone 1 (2–8°C) • Zone 2 (0–2°C) • Zone 3 (8–15°C)</span>
+      </div>
+      <span class="badge-safe">Target Stable</span>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="tempChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 2. Solar PV vs Cold Storage Load -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div>
+        <h3 style="font-size: 1.15rem; color: #0f172a;">Solar Power vs Cooling Load (kW)</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">2.4 kW Solar Array vs Hybrid Load</span>
+      </div>
+      <span class="badge-safe" style="background: #fffbeb; color: #b45309; border-color: #fde68a;">100% Solar Powered</span>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="powerChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 3. Battery State of Charge -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div>
+        <h3 style="font-size: 1.15rem; color: #0f172a;">Battery State of Charge (%) & AC Compressor Run</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">48V 10 kWh LiFePO4 Energy Cycle</span>
+      </div>
+      <span class="badge-safe">SOC Normal</span>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="batteryChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 4. Humidity & Ethylene Gas Levels -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div>
+        <h3 style="font-size: 1.15rem; color: #0f172a;">Relative Humidity (%) & Ethylene (ppm)</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Produce Moisture Retention & Freshness</span>
+      </div>
+      <span class="badge-safe">Fresh Air</span>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="humidityChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
+{% endblock %}

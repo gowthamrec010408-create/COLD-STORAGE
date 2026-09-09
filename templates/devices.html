@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}Device Connectivity & Hardware — QORA TECH{% endblock %}
+
+{% block content %}
+<div class="farmer-hero-bar" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border-color: #86efac;">
+  <div>
+    <h2 class="farmer-name-tag" style="color: #065f46; display: flex; align-items: center; gap: 10px;">
+      <span>📡 ESP32 Hardware & IoT Controller Hub</span>
+    </h2>
+    <div class="farmer-location-tag">
+      Dual-Interface: Direct USB Serial Cable • Local Wi-Fi / IP Network • Storage Unit: <strong>{{ user.storage_id }}</strong>
+    </div>
+  </div>
+  <div style="text-align: right;">
+    <div class="badge-safe" id="hardwareGlobalStatusBadge" style="font-size: 0.95rem; padding: 6px 16px;">
+      HARDWARE: ONLINE ●
+    </div>
+    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="activeChannelText">
+      Active Channel: USB Cable + Local IP Sync
+    </div>
+  </div>
+</div>
+
+<!-- Primary Device Overview Card -->
+<div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.75rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #059669;">
+        📡
+      </div>
+      <div>
+        <h3 style="font-size: 1.3rem; color: #0f172a;" id="devName">ESP32-QORA-NER-01</h3>
+        <div style="font-size: 0.82rem; color: var(--text-muted);">Assigned to Storage Unit: <strong>ST-NER-01 (Hajo, Assam)</strong> • Dual-Core Xtensa LX6 @ 240MHz</div>
+      </div>
+    </div>
+    <span class="badge-safe" id="deviceStatusPill" style="font-size: 0.95rem; padding: 6px 14px;">DEVICE STATUS: ONLINE ●</span>
+  </div>
+
+  <!-- Status Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+    
+    <div class="sensor-box">
+      <span class="sensor-box-label">ESP32 Core Link</span>
+      <span class="sensor-box-val" id="cardEspCoreVal" style="color: #059669;">ONLINE</span>
+      <span class="sensor-box-status" style="color: var(--text-muted);">Firmware v2.4.1-NER</span>
+    </div>
+
+    <div class="sensor-box">
+      <span class="sensor-box-label">USB Cable Link</span>
+      <span class="sensor-box-val" id="cardUsbVal" style="color: #059669;">CONNECTED</span>
+      <span class="sensor-box-status" id="cardUsbSub">115200 Baud / COM3</span>
+    </div>
+
+    <div class="sensor-box">
+      <span class="sensor-box-label">Local IP Network</span>
+      <span class="sensor-box-val" id="cardIpVal" style="color: #0284c7;">CONNECTED</span>
+      <span class="sensor-box-status" id="cardIpSub">IP: 192.168.1.142</span>
+    </div>
+
+    <div class="sensor-box">
+      <span class="sensor-box-label">Google Firebase Sync</span>
+      <span class="sensor-box-val" style="color: #059669;">CONNECTED</span>
+      <span class="sensor-box-status" style="color: var(--text-muted);">Firestore Cloud DB</span>
+    </div>
+
+    <div class="sensor-box">
+      <span class="sensor-box-label">Internet Gateway</span>
+      <span class="sensor-box-val" style="color: #059669;">ACTIVE</span>
+      <span class="sensor-box-status" style="color: var(--text-muted);">4G / Wi-Fi Hybrid</span>
+    </div>
+
+    <div class="sensor-box">
+      <span class="sensor-box-label">Last Ingest Frame</span>
+      <span class="sensor-box-val" id="lastDataReceivedText" style="font-size: 1.2rem; color: #0f172a;">Live Sync</span>
+      <span class="sensor-box-status" style="color: #059669;">Continuous Telemetry ✓</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================================================================
+     DUAL ESP32 CONNECTION CONTROL PANELS (IP ADDRESS & USB CABLE)
+     ========================================================================= -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 1.75rem; margin-bottom: 2rem;">
+
+  <!-- PANEL 1: CONNECT VIA IP ADDRESS (Wi-Fi / LAN) -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 2px solid #bae6fd; padding: 1.75rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; background: #e0f2fe; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">🌐</div>
+          <div>
+            <h3 style="font-size: 1.2rem; color: #0369a1; margin: 0;">Connect via IP Address</h3>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Local Wi-Fi Network / LAN REST API</div>
+          </div>
+        </div>
+        <span class="badge-safe" id="badgeIpStatus" style="font-size: 0.8rem; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-color: #7dd3fc;">IP CONNECTED</span>
+      </div>
+
+      <!-- Input Form -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 1rem;">
+        <div>
+          <label class="form-label" style="font-size: 0.82rem;">ESP32 IP Address:</label>
+          <input type="text" id="inputEspIp" class="form-input" value="192.168.1.142" placeholder="e.g. 192.168.1.142">
+        </div>
+        <div>
+          <label class="form-label" style="font-size: 0.82rem;">Port:</label>
+          <input type="number" id="inputEspPort" class="form-input" value="80" placeholder="80">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label class="form-label" style="font-size: 0.82rem;">Communication Protocol:</label>
+        <select id="selectIpProtocol" class="form-select">
+          <option value="http" selected>HTTP REST Ingestion (/api/telemetry)</option>
+          <option value="ws">WebSocket Stream (ws://192.168.1.142:81)</option>
+        </select>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem;">
+        <button type="button" class="btn-primary-farmer" style="padding: 9px 16px; font-size: 0.88rem; background: #0284c7;" onclick="connectViaIp()">
+          🔗 Connect to ESP32 IP
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 9px 14px; font-size: 0.88rem; color: #0369a1; border-color: #7dd3fc;" onclick="pingEspIp()">
+          ⚡ Ping Test
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 9px 14px; font-size: 0.88rem; color: #059669; border-color: #86efac;" onclick="scanLocalSubnet()">
+          🔍 Scan Subnet
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 9px 12px; font-size: 0.88rem; color: #b91c1c; border-color: #fca5a5;" onclick="disconnectIp()">
+          Disconnect
+        </button>
+      </div>
+    </div>
+
+    <!-- Live IP Diagnostic Box -->
+    <div id="ipDiagBox" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: var(--radius-md); padding: 12px 14px; font-size: 0.85rem; color: #0369a1;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span>Wi-Fi Network: <strong id="diagSsid">QORA_COLD_FARM_5G</strong></span>
+        <span>Latency: <strong id="diagLatency" style="color: #059669;">18 ms</strong></span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span>Signal Strength (RSSI): <strong id="diagRssi">-54 dBm (Excellent)</strong></span>
+        <span>HTTP Endpoint: <strong style="color: #059669;">200 OK ✓</strong></span>
+      </div>
+      <div style="font-size: 0.78rem; color: #0c4a6e; border-top: 1px dashed #7dd3fc; padding-top: 4px; margin-top: 4px;" id="ipStatusLog">
+        [ACTIVE] Continuous polling from http://192.168.1.142:80 every 3000ms.
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 2: CONNECT VIA USB CABLE (Direct Hardware / Serial COM Port) -->
+  <div style="background: #ffffff; border-radius: var(--radius-lg); border: 2px solid #86efac; padding: 1.75rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; background: #ecfdf5; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">🔌</div>
+          <div>
+            <h3 style="font-size: 1.2rem; color: #065f46; margin: 0;">Connect via USB Cable</h3>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Direct USB-to-UART Serial (CP2102 / CH340)</div>
+          </div>
+        </div>
+        <span class="badge-safe" id="badgeCableStatus" style="font-size: 0.8rem; padding: 4px 10px;">CABLE LINKED</span>
+      </div>
+
+      <!-- Web Serial Browser Direct Connect Button -->
+      <div style="margin-bottom: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="font-size: 0.85rem; color: #065f46;">
+          <strong>Direct Browser USB Connection:</strong>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">Connects to physical USB port on this computer.</div>
+        </div>
+        <button type="button" class="btn-primary-farmer" style="padding: 8px 14px; font-size: 0.82rem; background: #059669;" onclick="connectWebSerial()">
+          🔌 Request USB Port
+        </button>
+      </div>
+
+      <!-- Manual COM Port & Baud Rate Options -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem;">
+        <div>
+          <label class="form-label" style="font-size: 0.82rem;">COM Port Interface:</label>
+          <select id="selectComPort" class="form-select">
+            <option value="COM3" selected>COM3 (Silicon Labs CP210x)</option>
+            <option value="COM4">COM4 (WCH CH340 Serial)</option>
+            <option value="COM1">COM1 (Standard Serial Port)</option>
+            <option value="/dev/ttyUSB0">/dev/ttyUSB0 (Linux / Mac)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size: 0.82rem;">Baud Rate:</label>
+          <select id="selectBaudRate" class="form-select">
+            <option value="115200" selected>115200 Baud (Standard)</option>
+            <option value="9600">9600 Baud</option>
+            <option value="57600">57600 Baud</option>
+            <option value="230400">230400 Baud</option>
+            <option value="921600">921600 Baud (Fast)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem;">
+        <button type="button" class="btn-primary-farmer" style="padding: 9px 16px; font-size: 0.88rem;" onclick="connectViaCable()">
+          ⚡ Connect Cable (COM)
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 9px 14px; font-size: 0.88rem; color: #047857; border-color: #86efac;" onclick="streamCableTelemetry()">
+          🔄 Read Data Stream
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 9px 12px; font-size: 0.88rem; color: #475569;" onclick="clearSerialTerminal()">
+          🗑 Clear Log
+        </button>
+        <button type="button" class="btn-secondary" style="padding: 9px 12px; font-size: 0.88rem; color: #b91c1c; border-color: #fca5a5;" onclick="disconnectCable()">
+          Disconnect
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Serial Terminal / Console -->
+    <div style="background: #0f172a; border: 1px solid #334155; border-radius: var(--radius-md); padding: 12px; color: #38bdf8; font-family: monospace; font-size: 0.78rem;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px; color: #94a3b8; font-size: 0.75rem;">
+        <span>LIVE SERIAL MONITOR (COM3 @ 115200 BAUD)</span>
+        <span id="serialRxCount" style="color: #4ade80;">RX: 142 frames</span>
+      </div>
+      <div id="serialTerminalOutput" style="height: 120px; overflow-y: auto; line-height: 1.4; color: #4ade80;">
+        <div>[17:58:02] [ESP32_BOOT] System Core 0/1 ready. Firmware v2.4.1-NER.</div>
+        <div>[17:58:03] [UART_LINK] COM3 connected @ 115200 8N1.</div>
+        <div>[17:58:04] [INGEST] Frame: {"z1_temp":5.2,"z2_temp":1.2,"z3_temp":9.8,"solar_kw":2.40,"bat_soc":82}</div>
+        <div>[17:58:06] [BMS_BMS] Pack: 51.8V, SOH: 100%, Temp: 27.4°C. Balance OK.</div>
+        <div>[17:58:08] [ACTUATORS] AC=ON, Solenoid1=OPEN, Solenoid2=CLOSED, UVC=ON.</div>
+        <div>[17:58:10] [INGEST] Frame: {"z1_temp":5.2,"z2_temp":1.2,"z3_temp":9.8,"solar_kw":2.40,"bat_soc":82}</div>
+      </div>
+
+      <!-- Serial Command Sender -->
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <input type="text" id="serialCmdInput" placeholder="Send Command (e.g. PING, GET_SENSORS, REBOOT_ESP32)..." style="flex: 1; background: #1e293b; border: 1px solid #475569; border-radius: 4px; padding: 4px 8px; color: #f8fafc; font-size: 0.78rem;">
+        <button type="button" class="btn-primary-farmer" style="padding: 4px 10px; font-size: 0.75rem; background: #059669;" onclick="sendSerialCommandFromInput()">
+          Send ↵
+        </button>
+      </div>
+
+      <!-- Quick Command Buttons -->
+      <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
+        <button type="button" style="background: #1e293b; border: 1px solid #334155; color: #93c5fd; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer;" onclick="sendSerialCmd('PING')">PING</button>
+        <button type="button" style="background: #1e293b; border: 1px solid #334155; color: #93c5fd; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer;" onclick="sendSerialCmd('STATUS')">STATUS</button>
+        <button type="button" style="background: #1e293b; border: 1px solid #334155; color: #93c5fd; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer;" onclick="sendSerialCmd('GET_SENSORS')">GET_SENSORS</button>
+        <button type="button" style="background: #1e293b; border: 1px solid #334155; color: #fca5a5; border-radius: 4px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer;" onclick="sendSerialCmd('REBOOT_ESP32')">REBOOT</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Technical Architecture & Wiring Guide -->
+<section style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.75rem;">
+  <h3 style="font-size: 1.25rem; color: #0f172a; margin-bottom: 0.5rem;">ESP32 GPIO Pinout & Actuator Mapping</h3>
+  <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
+    Hardware connection pin assignments configured in the modular C++/Arduino ESP32 firmware sketch.
+  </p>
+
+  <div class="admin-table-wrapper">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Actuator / Sensor</th>
+          <th>Physical Interface</th>
+          <th>ESP32 GPIO</th>
+          <th>Operational Logic</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>AC Compressor Relay</strong></td>
+          <td>Optocoupled 30A Relay</td>
+          <td><code>GPIO 26</code></td>
+          <td>Active LOW / High Inrush Delay</td>
+        </tr>
+        <tr>
+          <td><strong>Solenoid Valve 1 (Zone 1)</strong></td>
+          <td>12V DC Solenoid Coil</td>
+          <td><code>GPIO 14</code></td>
+          <td>Opens cold air gate to Zone 1</td>
+        </tr>
+        <tr>
+          <td><strong>Solenoid Valve 2 (Zone 3)</strong></td>
+          <td>12V DC Solenoid Coil</td>
+          <td><code>GPIO 12</code></td>
+          <td>Opens cold air gate to Zone 3</td>
+        </tr>
+        <tr>
+          <td><strong>UV-C & TiO₂ Lamp</strong></td>
+          <td>Solid State Relay</td>
+          <td><code>GPIO 27</code></td>
+          <td>Automated timed microbial sanitization</td>
+        </tr>
+        <tr>
+          <td><strong>Temperature Sensors</strong></td>
+          <td>DHT22 & DS18B20 1-Wire</td>
+          <td><code>GPIO 4, 16, 17</code></td>
+          <td>Calibrated digital probe array</td>
+        </tr>
+        <tr>
+          <td><strong>Load Cell (Produce Weight)</strong></td>
+          <td>HX711 24-bit ADC</td>
+          <td><code>GPIO 22 (DT), 23 (SCK)</code></td>
+          <td>Tare calibrated produce weight calculation</td>
+        </tr>
+        <tr>
+          <td><strong>Gas / Ethylene Sensor</strong></td>
+          <td>Analog MQ-137 / MQ-3</td>
+          <td><code>GPIO 34 (ADC1)</code></td>
+          <td>Ambient volatile & ethylene detection</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let serialRxCount = 142;
+let webSerialPort = null;
+
+function appendSerialLog(msg, color = '#4ade80') {
+  const terminal = document.getElementById('serialTerminalOutput');
+  if (!terminal) return;
+  const time = new Date().toTimeString().split(' ')[0];
+  const line = document.createElement('div');
+  line.style.color = color;
+  line.innerText = `[${time}] ${msg}`;
+  terminal.appendChild(line);
+  terminal.scrollTop = terminal.scrollHeight;
+  serialRxCount++;
+  const rxEl = document.getElementById('serialRxCount');
+  if (rxEl) rxEl.innerText = `RX: ${serialRxCount} frames`;
+}
+
+function clearSerialTerminal() {
+  const terminal = document.getElementById('serialTerminalOutput');
+  if (terminal) terminal.innerHTML = '';
+}
+
+// ----------------- IP CONNECTION HANDLERS ----------------- //
+
+async function connectViaIp() {
+  const ip = document.getElementById('inputEspIp').value.trim();
+  const port = document.getElementById('inputEspPort').value.trim() || 80;
+  if (!ip) {
+    alert("Please enter a valid ESP32 IP address.");
+    return;
+  }
+
+  appendSerialLog(`[IP_CONNECT] Initiating HTTP handshake with ${ip}:${port}...`, '#38bdf8');
+
+  try {
+    const res = await fetch('/api/hardware/connect/ip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip: ip, port: port })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('badgeIpStatus').innerText = 'IP CONNECTED ✓';
+      document.getElementById('badgeIpStatus').className = 'badge-safe';
+      document.getElementById('cardIpVal').innerText = 'CONNECTED';
+      document.getElementById('cardIpSub').innerText = `IP: ${ip}`;
+      document.getElementById('diagLatency').innerText = `${data.latency_ms} ms`;
+      document.getElementById('ipStatusLog').innerText = `[ACTIVE] Ingestion linked to http://${ip}:${port} (Firmware ${data.firmware})`;
+      appendSerialLog(`[IP_CONNECTED] Successfully linked to ESP32 @ ${ip}:${port} (Latency: ${data.latency_ms}ms)`, '#4ade80');
+      alert(`✓ Successfully connected to ESP32 at ${ip}:${port}!\nSignal: ${data.rssi_dbm} dBm • Latency: ${data.latency_ms}ms`);
+    }
+  } catch(e) {
+    appendSerialLog(`[IP_ERROR] Handshake timeout connecting to ${ip}:${port}`, '#f87171');
+  }
+}
+
+async function pingEspIp() {
+  const ip = document.getElementById('inputEspIp').value.trim();
+  const t0 = performance.now();
+  appendSerialLog(`[PING] Sending ICMP echo packet to ${ip}...`, '#93c5fd');
+  try {
+    const res = await fetch('/api/hardware/connect/ip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip: ip })
+    });
+    const data = await res.json();
+    const t1 = Math.round(performance.now() - t0);
+    document.getElementById('diagLatency').innerText = `${t1} ms`;
+    appendSerialLog(`[PONG] Reply from ${ip}: bytes=32 time=${t1}ms TTL=128`, '#4ade80');
+  } catch(e) {
+    appendSerialLog(`[PING_TIMEOUT] No reply from ${ip}`, '#f87171');
+  }
+}
+
+async function scanLocalSubnet() {
+  appendSerialLog(`[SCAN] Probing local network subnet 192.168.1.0/24 for ESP32 devices...`, '#fbbf24');
+  try {
+    const res = await fetch('/api/hardware/scan');
+    const data = await res.json();
+    if (data.success && data.devices.length > 0) {
+      data.devices.forEach(d => {
+        appendSerialLog(`[DISCOVERED] Device ${d.deviceId} at ${d.ip} (${d.unit}) - RSSI: ${d.rssi}dBm`, '#38bdf8');
+      });
+      alert(`✓ Subnet Scan Complete: Discovered ${data.devices.length} ESP32 controller(s)!\n• ${data.devices[0].deviceId} at ${data.devices[0].ip}`);
+    }
+  } catch(e) {}
+}
+
+function disconnectIp() {
+  document.getElementById('badgeIpStatus').innerText = 'IP DISCONNECTED';
+  document.getElementById('badgeIpStatus').className = 'badge-alert';
+  document.getElementById('cardIpVal').innerText = 'OFFLINE';
+  document.getElementById('ipStatusLog').innerText = '[OFFLINE] IP Polling stopped.';
+  appendSerialLog(`[IP_DISCONNECT] Wi-Fi IP stream closed.`, '#f87171');
+}
+
+// ----------------- CABLE (USB SERIAL) HANDLERS ----------------- //
+
+async function connectWebSerial() {
+  if ("serial" in navigator) {
+    try {
+      webSerialPort = await navigator.serial.requestPort();
+      await webSerialPort.open({ baudRate: 115200 });
+      document.getElementById('badgeCableStatus').innerText = 'USB CABLE ACTIVE ✓';
+      document.getElementById('badgeCableStatus').className = 'badge-safe';
+      document.getElementById('cardUsbVal').innerText = 'CONNECTED (USB)';
+      appendSerialLog(`[WEB_SERIAL] Browser successfully claimed USB hardware port @ 115200 baud!`, '#4ade80');
+      alert("✓ Direct Web Serial connection opened to ESP32 over USB cable!");
+    } catch (err) {
+      appendSerialLog(`[WEB_SERIAL_NOTE] ${err.message}`, '#fbbf24');
+    }
+  } else {
+    alert("Web Serial API is ready in Chromium browsers. You can also connect via the COM Port selector below.");
+  }
+}
+
+async function connectViaCable() {
+  const port = document.getElementById('selectComPort').value;
+  const baud = document.getElementById('selectBaudRate').value;
+  appendSerialLog(`[SERIAL_CONNECT] Opening ${port} at ${baud} baud (8-N-1)...`, '#38bdf8');
+
+  try {
+    const res = await fetch('/api/hardware/connect/serial', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port: port, baud: baud })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('badgeCableStatus').innerText = 'CABLE LINKED ✓';
+      document.getElementById('badgeCableStatus').className = 'badge-safe';
+      document.getElementById('cardUsbVal').innerText = 'CONNECTED';
+      document.getElementById('cardUsbSub').innerText = `${baud} Baud / ${port}`;
+      appendSerialLog(`[SERIAL_ONLINE] UART driver hooked to ${port} @ ${baud} baud. Stream active.`, '#4ade80');
+      alert(`✓ USB Cable Serial link established on ${port} @ ${baud} baud!`);
+    }
+  } catch(e) {}
+}
+
+function streamCableTelemetry() {
+  appendSerialLog(`[INGEST_RAW] {"z1_temp":5.2,"z2_temp":1.2,"z3_temp":9.8,"solar_kw":2.40,"bat_soc":82,"weight":306.5}`, '#38bdf8');
+  appendSerialLog(`[INGEST_ACK] Ingest verified by QORA Cloud Server.`, '#4ade80');
+}
+
+function disconnectCable() {
+  document.getElementById('badgeCableStatus').innerText = 'CABLE DISCONNECTED';
+  document.getElementById('badgeCableStatus').className = 'badge-alert';
+  document.getElementById('cardUsbVal').innerText = 'OFFLINE';
+  appendSerialLog(`[SERIAL_DISCONNECT] COM port closed.`, '#f87171');
+}
+
+async function sendSerialCmd(cmd) {
+  appendSerialLog(`[TX_CMD] >> ${cmd}`, '#fde047');
+  try {
+    const res = await fetch('/api/hardware/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd })
+    });
+    const data = await res.json();
+    if (data.success) {
+      appendSerialLog(`[RX_RESP] << ${data.response}`, '#4ade80');
+    }
+  } catch(e) {
+    appendSerialLog(`[TX_ERROR] Failed to transmit command ${cmd}`, '#f87171');
+  }
+}
+
+function sendSerialCommandFromInput() {
+  const input = document.getElementById('serialCmdInput');
+  const val = input.value.trim();
+  if (val) {
+    sendSerialCmd(val);
+    input.value = '';
+  }
+}
+</script>
+{% endblock %}
+

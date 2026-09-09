@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}My Crops — QORA TECH Solar Smart Cold Storage{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h2 style="font-size: 1.8rem; color: #064e3b; margin-bottom: 2px;">NER Crop Storage Requirements Database</h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Authentic crop post-harvest specifications for North Eastern Region farmers. Keep produce fresh and prevent chilling injury.
+    </p>
+  </div>
+
+  {% if session.get('user_role') == 'admin' %}
+    <button type="button" class="btn-primary-farmer" onclick="openAddCropModal()" style="padding: 8px 16px; font-size: 0.88rem;">
+      + Add New Crop
+    </button>
+  {% endif %}
+</div>
+
+<!-- Zone & Season Filter Bar (Section 15) -->
+<div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+  <!-- Zone Filter -->
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    <span style="font-weight: 700; font-size: 0.88rem; color: #0f172a;">Filter by Zone:</span>
+    <button type="button" class="mode-btn active" id="btnZoneAll" onclick="filterCrops('zone', 'all')">All Zones</button>
+    <button type="button" class="mode-btn" id="btnZone1" onclick="filterCrops('zone', 'ZONE 1')">Zone 1 (2–8°C)</button>
+    <button type="button" class="mode-btn" id="btnZone2" onclick="filterCrops('zone', 'ZONE 2')">Zone 2 (0–2°C)</button>
+    <button type="button" class="mode-btn" id="btnZone3" onclick="filterCrops('zone', 'ZONE 3')">Zone 3 (8–15°C)</button>
+  </div>
+
+  <!-- Season Filter -->
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="font-weight: 700; font-size: 0.88rem; color: #0f172a;">Season:</span>
+    <select id="seasonFilterSelect" class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.88rem;" onchange="filterCrops('season', this.value)">
+      <option value="all">All Seasons</option>
+      <option value="Winter">Winter / Rabi</option>
+      <option value="Summer">Summer / Zaid</option>
+      <option value="Monsoon">Monsoon / Kharif</option>
+    </select>
+  </div>
+</div>
+
+<!-- Crops Catalog Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;" id="cropsListGrid">
+  {% for crop in crops %}
+  <div class="crop-item-card" data-zone="{{ crop.recommended_zone }}" data-season="{{ crop.season }}" style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-color); overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;">
+    
+    <div>
+      <!-- Large Crop Photo -->
+      <div style="position: relative; height: 180px; width: 100%;">
+        <img src="{{ url_for('static', filename=crop.image_url.replace('static/', '')) }}" alt="{{ crop.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+        <div style="position: absolute; top: 12px; right: 12px;">
+          <span class="badge-safe" style="font-weight: 800; padding: 4px 10px; background: rgba(255,255,255,0.95); color: #065f46; box-shadow: var(--shadow-sm);">
+            {{ crop.recommended_zone }}
+          </span>
+        </div>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, transparent 0%, rgba(15,23,42,0.85) 100%); padding: 8px 16px; color: #ffffff;">
+          <h3 style="font-size: 1.25rem; font-weight: 700;">{{ crop.name }}</h3>
+          <div style="font-size: 0.78rem; font-style: italic; opacity: 0.9;">{{ crop.scientific_name }}</div>
+        </div>
+      </div>
+
+      <!-- Specs Body -->
+      <div style="padding: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 8px 10px;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Storage Temp</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #0284c7;">{{ crop.min_temp }}–{{ crop.max_temp }}°C</div>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 8px 10px;">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Target Humidity</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #059669;">{{ crop.min_humidity }}–{{ crop.max_humidity }}%</div>
+          </div>
+        </div>
+
+        <!-- Shelf Life -->
+        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 0.75rem; font-size: 0.85rem;">
+          <div style="color: #065f46; font-weight: 700;">Shelf-Life Extension:</div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+            <span>Ambient: <strong style="color: #b91c1c;">{{ crop.shelf_life_ambient }}</strong></span>
+            <span>Cold Room: <strong style="color: #059669;">{{ crop.shelf_life_cold }}</strong></span>
+          </div>
+        </div>
+
+        <p style="font-size: 0.85rem; color: #475569; line-height: 1.4;">
+          💡 {{ crop.advisory }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer source & admin actions -->
+    <div style="padding: 10px 1.25rem; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+      <span>Source: {{ crop.source_info.split('/')[0] }}</span>
+      {% if session.get('user_role') == 'admin' %}
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.72rem;" onclick="openEditModal('{{ crop.id }}', '{{ crop.name }}', {{ crop.min_temp }}, {{ crop.max_temp }}, '{{ crop.advisory }}')">Edit</button>
+          <button type="button" class="btn-secondary" style="padding: 2px 6px; font-size: 0.72rem; color: #b91c1c;" onclick="deleteCrop('{{ crop.id }}')">Delete</button>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Modal for Admin Edit Crop -->
+<div id="cropModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+  <div style="background: #ffffff; border-radius: var(--radius-lg); padding: 2rem; max-width: 480px; width: 90%; box-shadow: var(--shadow-xl);">
+    <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: #064e3b;" id="cropModalTitle">Edit Crop</h3>
+    <form onsubmit="saveCrop(event)">
+      <input type="hidden" id="modalCropId">
+      <div class="form-group">
+        <label class="form-label">Crop Name</label>
+        <input type="text" id="modalCropName" class="form-input" required>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Min Temp (°C)</label>
+          <input type="number" step="0.5" id="modalMinTemp" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Temp (°C)</label>
+          <input type="number" step="0.5" id="modalMaxTemp" class="form-input" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Agronomic Storage Advisory</label>
+        <textarea id="modalAdvisory" class="form-input" rows="3" required></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem;">
+        <button type="button" class="btn-secondary" onclick="closeCropModal()">Cancel</button>
+        <button type="submit" class="btn-primary-farmer" style="padding: 10px 20px;">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let activeZoneFilter = 'all';
+let activeSeasonFilter = 'all';
+
+function filterCrops(type, val) {
+  if (type === 'zone') {
+    activeZoneFilter = val;
+    ['all', 'ZONE 1', 'ZONE 2', 'ZONE 3'].forEach(z => {
+      const b = document.getElementById(`btnZone${z.replace('ZONE ', '').replace('all', 'All')}`);
+      if (b) {
+        if (z === val) b.classList.add('active');
+        else b.classList.remove('active');
+      }
+    });
+  } else if (type === 'season') {
+    activeSeasonFilter = val;
+  }
+
+  const cards = document.querySelectorAll('.crop-item-card');
+  cards.forEach(c => {
+    const cardZone = c.getAttribute('data-zone');
+    const cardSeason = c.getAttribute('data-season') || 'Winter';
+
+    const matchZone = (activeZoneFilter === 'all' || cardZone === activeZoneFilter);
+    const matchSeason = (activeSeasonFilter === 'all' || cardSeason === activeSeasonFilter);
+
+    if (matchZone && matchSeason) {
+      c.style.display = 'flex';
+    } else {
+      c.style.display = 'none';
+    }
+  });
+}
+
+function openAddCropModal() {
+  document.getElementById('modalCropId').value = '';
+  document.getElementById('modalCropName').value = '';
+  document.getElementById('modalMinTemp').value = '2.0';
+  document.getElementById('modalMaxTemp').value = '8.0';
+  document.getElementById('modalAdvisory').value = '';
+  document.getElementById('cropModalTitle').innerText = 'Add New Crop Specification';
+  document.getElementById('cropModal').style.display = 'flex';
+}
+
+function openEditModal(id, name, minT, maxT, adv) {
+  document.getElementById('modalCropId').value = id;
+  document.getElementById('modalCropName').value = name;
+  document.getElementById('modalMinTemp').value = minT;
+  document.getElementById('modalMaxTemp').value = maxT;
+  document.getElementById('modalAdvisory').value = adv;
+  document.getElementById('cropModalTitle').innerText = 'Edit Crop Specification';
+  document.getElementById('cropModal').style.display = 'flex';
+}
+
+function closeCropModal() {
+  document.getElementById('cropModal').style.display = 'none';
+}
+
+async function saveCrop(e) {
+  e.preventDefault();
+  const id = document.getElementById('modalCropId').value;
+  const name = document.getElementById('modalCropName').value;
+  const min_temp = document.getElementById('modalMinTemp').value;
+  const max_temp = document.getElementById('modalMaxTemp').value;
+  const advisory = document.getElementById('modalAdvisory').value;
+
+  const endpoint = id ? '/api/crops/update' : '/api/crops/add';
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ crop_id: id, name, min_temp, max_temp, advisory })
+  });
+  const data = await res.json();
+  if (data.success) {
+    alert('Crop database updated successfully!');
+    location.reload();
+  }
+}
+
+async function deleteCrop(id) {
+  if (confirm("Are you sure you want to remove this crop from the database?")) {
+    const res = await fetch('/api/crops/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ crop_id: id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      location.reload();
+    }
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Power Management — QORA TECH Solar Smart Cold Storage{% endblock %}
+
+{% block content %}
+<div class="farmer-hero-bar" style="background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%); border-color: #fde68a;">
+  <div>
+    <h2 class="farmer-name-tag" style="color: #92400e; display: flex; align-items: center; gap: 10px;">
+      <span>⚡ Solar Power & Energy Storage Hub</span>
+    </h2>
+    <div class="farmer-location-tag">
+      Off-Grid 2.4 kWp Solar PV Array • 48V 10 kWh LiFePO4 Battery Bank • Storage Unit: <strong>{{ user.storage_id }}</strong>
+    </div>
+  </div>
+  <div style="text-align: right;">
+    <div class="badge-safe" id="powerMainBadge" style="font-size: 0.95rem; padding: 6px 16px; background: #ecfdf5; color: #047857; border-color: #a7f3d0;">
+      POWER GRID: NORMAL ✓
+    </div>
+    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+      Live BMS & MPPT Telemetry Active
+    </div>
+  </div>
+</div>
+
+<!-- 4 POWER KPI GLANCE CARDS -->
+<div class="kpi-glance-grid">
+  <!-- Solar Generation -->
+  <div class="kpi-card kpi-solar">
+    <div class="kpi-label">
+      <span>Solar PV Output</span>
+      <span>☀</span>
+    </div>
+    <div class="kpi-number" id="pwrSolarKwp">2.40 <span style="font-size: 1.2rem; font-weight: 500;">kW</span></div>
+    <div class="kpi-subtext" id="pwrSolarDetails">Voltage: 76.4 V • 31.4 A</div>
+  </div>
+
+  <!-- Battery SOC -->
+  <div class="kpi-card kpi-battery">
+    <div class="kpi-label">
+      <span>Battery SOC</span>
+      <span>🔋</span>
+    </div>
+    <div class="kpi-number" id="pwrBatterySoc">82 <span style="font-size: 1.2rem; font-weight: 500;">%</span></div>
+    <div class="kpi-subtext" id="pwrBatteryDetails">Voltage: 51.8 V • 7.2 kWh Pack</div>
+  </div>
+
+  <!-- Backup Runtime -->
+  <div class="kpi-card kpi-system">
+    <div class="kpi-label">
+      <span>Backup Runtime</span>
+      <span>⏱</span>
+    </div>
+    <div class="kpi-number" id="pwrBackupTime" style="font-size: 1.85rem; color: #059669;">4 h 25 m</div>
+    <div class="kpi-subtext" id="pwrChargeTime">Charge to 100%: ~1 h 10 min</div>
+  </div>
+
+  <!-- Cold Storage Load -->
+  <div class="kpi-card kpi-mode">
+    <div class="kpi-label">
+      <span>Cold Storage Load</span>
+      <span>❄</span>
+    </div>
+    <div class="kpi-number" id="pwrTotalLoad" style="font-size: 1.85rem; color: #0284c7;">1.25 <span style="font-size: 1.1rem; font-weight: 500;">kW</span></div>
+    <div class="kpi-subtext" id="pwrLoadSource">Power Source: SOLAR PV</div>
+  </div>
+</div>
+
+<!-- DYNAMIC POWER FLOW ARCHITECTURE -->
+<section class="storage-mode-section">
+  <div class="storage-mode-header-box">
+    <div class="mode-text-content">
+      <div class="mode-badge-title">
+        <span class="mode-icon-box" style="background: #fef3c7; border-color: #fde68a;">⚡</span>
+        <div>
+          <h3 class="mode-title-text">Live Energy Routing & Power Flow</h3>
+          <p class="mode-desc-text">
+            Smart automatic distribution between Solar PV array, LiFePO4 battery buffer, and refrigerated chambers.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="solar-power-flow-banner" id="pwrFlowDirectionBadge" style="margin: 0;">
+      <span>⚡ Route:</span>
+      <strong id="pwrFlowText" style="color: #047857;">SOLAR → LOAD + BATTERY</strong>
+    </div>
+  </div>
+
+  <!-- Visual Power Routing Diagram -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+    <!-- Node 1: Solar PV Array -->
+    <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #fde68a; border-radius: var(--radius-md); padding: 1.25rem; text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 4px;">☀</div>
+      <h4 style="color: #92400e; font-size: 1.1rem;">SOLAR PV ARRAY</h4>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #b45309; margin: 4px 0;" id="flowSolarVal">2.40 kW</div>
+      <div style="font-size: 0.8rem; color: #78350f;">6x 400W Monocrystalline Panels</div>
+      <div class="badge-safe" style="margin-top: 8px; font-size: 0.75rem; background: #fef3c7; color: #b45309; border-color: #fcd34d;">GENERATING ACTIVE</div>
+    </div>
+
+    <!-- Node 2: MPPT Controller & BMS -->
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #bbf7d0; border-radius: var(--radius-md); padding: 1.25rem; text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 4px;">🔋</div>
+      <h4 style="color: #065f46; font-size: 1.1rem;">48V LiFePO4 BATTERY</h4>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #047857; margin: 4px 0;" id="flowBatteryVal">82% (7.2 kWh)</div>
+      <div style="font-size: 0.8rem; color: #064e3b;">BMS Active • 16S Pack Balance OK</div>
+      <div class="badge-safe" id="flowBatteryStatusBadge" style="margin-top: 8px; font-size: 0.75rem;">CHARGING (1.15 kW In)</div>
+    </div>
+
+    <!-- Node 3: Inverter & Cold Unit Load -->
+    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #bae6fd; border-radius: var(--radius-md); padding: 1.25rem; text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 4px;">❄</div>
+      <h4 style="color: #0369a1; font-size: 1.1rem;">COLD STORAGE LOAD</h4>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #0284c7; margin: 4px 0;" id="flowLoadVal">1.25 kW</div>
+      <div style="font-size: 0.8rem; color: #0c4a6e;">Chiller Compressor + Circulation</div>
+      <div class="badge-safe" style="margin-top: 8px; font-size: 0.75rem; background: #e0f2fe; color: #0369a1; border-color: #7dd3fc;">POWERED NORMALLY</div>
+    </div>
+  </div>
+</section>
+
+<!-- POWER MODE SELECTOR & ANOMALY CONTROLS -->
+<section style="background: #ffffff; border: 1.5px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 style="font-size: 1.25rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+        <span>🎮 Interactive Power Mode & Anomaly Simulator</span>
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem;">
+        Demonstrate autonomous solar/battery switching and power cut safety mechanisms.
+      </p>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <button type="button" class="btn-primary-farmer" style="padding: 10px 18px; font-size: 0.88rem;" onclick="setPowerMode('solar_normal')">
+      ☀ Normal Solar Priority (2.4 kW)
+    </button>
+    <button type="button" class="btn-secondary" style="padding: 10px 18px; font-size: 0.88rem; color: #b45309; border-color: #fcd34d;" onclick="setPowerMode('battery_eco')">
+      🔋 Battery Eco Runtime Mode
+    </button>
+    <button type="button" class="btn-secondary" style="padding: 10px 18px; font-size: 0.88rem; color: #dc2626; border-color: #fca5a5;" onclick="triggerPowerAnomaly('power_fail')">
+      ⚠ Simulate Solar / Grid Cut Outage
+    </button>
+    <button type="button" class="btn-secondary" style="padding: 10px 18px; font-size: 0.88rem; color: #059669; border-color: #86efac;" onclick="triggerPowerAnomaly('normal')">
+      ✓ Restore Full Solar Power
+    </button>
+  </div>
+</section>
+
+<!-- SOLAR & BATTERY DETAILED TELEMETRY GRID -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+  <!-- Solar PV Detailed Stats -->
+  <div style="background: #ffffff; border: 1.5px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <h3 style="font-size: 1.2rem; color: #b45309; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+      <span>☀ Solar Array Diagnostics</span>
+    </h3>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="sensor-box">
+        <span class="sensor-box-label">Solar Irradiation</span>
+        <span class="sensor-box-val" id="solarIrradVal" style="color: #b45309;">840 W/m²</span>
+        <span class="sensor-box-status" style="color: #059669;">Optimal Peak Sun</span>
+      </div>
+      <div class="sensor-box">
+        <span class="sensor-box-label">Array Voltage</span>
+        <span class="sensor-box-val" id="solarVoltVal">76.4 V</span>
+        <span class="sensor-box-status" style="color: #059669;">MPPT Tracking ✓</span>
+      </div>
+      <div class="sensor-box">
+        <span class="sensor-box-label">Daily Energy Yield</span>
+        <span class="sensor-box-val" style="color: #047857;">14.6 kWh</span>
+        <span class="sensor-box-status" style="color: var(--text-muted);">Today Total</span>
+      </div>
+      <div class="sensor-box">
+        <span class="sensor-box-label">Carbon Offset</span>
+        <span class="sensor-box-val" style="color: #059669;">12.4 kg</span>
+        <span class="sensor-box-status" style="color: #059669;">Clean Energy</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 48V Battery Detailed Stats -->
+  <div style="background: #ffffff; border: 1.5px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <h3 style="font-size: 1.2rem; color: #047857; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+      <span>🔋 LiFePO4 Battery Diagnostics</span>
+    </h3>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="sensor-box">
+        <span class="sensor-box-label">Pack Voltage</span>
+        <span class="sensor-box-val" id="batVoltVal">51.8 V</span>
+        <span class="sensor-box-status" style="color: #059669;">Safe Operating Band</span>
+      </div>
+      <div class="sensor-box">
+        <span class="sensor-box-label">State of Health (SOH)</span>
+        <span class="sensor-box-val" style="color: #047857;">100%</span>
+        <span class="sensor-box-status" style="color: #059669;">Grade-A Cells</span>
+      </div>
+      <div class="sensor-box">
+        <span class="sensor-box-label">BMS Temperature</span>
+        <span class="sensor-box-val">27.4°C</span>
+        <span class="sensor-box-status" style="color: #059669;">Thermal Normal</span>
+      </div>
+      <div class="sensor-box">
+        <span class="sensor-box-label">Cycle Count</span>
+        <span class="sensor-box-val">148</span>
+        <span class="sensor-box-status" style="color: var(--text-muted);">4,000 Cycle Life</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function fetchPowerTelemetry() {
+  try {
+    const res = await fetch('/api/system/status');
+    const json = await res.json();
+    if (!json.success || !json.has_data) return;
+
+    const p = json.data.power;
+    document.getElementById('pwrSolarKwp').innerHTML = `${p.solar_power_kw.toFixed(2)} <span style="font-size: 1.2rem; font-weight: 500;">kW</span>`;
+    document.getElementById('pwrSolarDetails').innerText = `Voltage: ${p.solar_voltage} V • ${p.solar_current} A`;
+    document.getElementById('pwrBatterySoc').innerHTML = `${Math.round(p.battery_soc)} <span style="font-size: 1.2rem; font-weight: 500;">%</span>`;
+    document.getElementById('pwrBatteryDetails').innerText = `Voltage: ${p.battery_voltage} V • ${p.available_kwh.toFixed(1)} kWh Available`;
+    document.getElementById('pwrBackupTime').innerText = p.estimated_runtime;
+    document.getElementById('pwrChargeTime').innerText = `Charge to 100%: ~${p.estimated_charging}`;
+    document.getElementById('pwrTotalLoad').innerHTML = `${p.current_load_kw.toFixed(2)} <span style="font-size: 1.1rem; font-weight: 500;">kW</span>`;
+    document.getElementById('pwrLoadSource').innerText = `Power Source: ${p.power_source}`;
+
+    document.getElementById('pwrFlowText').innerText = p.power_direction;
+    document.getElementById('flowSolarVal').innerText = `${p.solar_power_kw.toFixed(2)} kW`;
+    document.getElementById('flowBatteryVal').innerText = `${Math.round(p.battery_soc)}% (${p.available_kwh.toFixed(1)} kWh)`;
+    document.getElementById('flowLoadVal').innerText = `${p.current_load_kw.toFixed(2)} kW`;
+
+    const mainBadge = document.getElementById('powerMainBadge');
+    if (p.power_status === 'NORMAL') {
+      mainBadge.innerText = 'POWER GRID: NORMAL ✓';
+      mainBadge.className = 'badge-safe';
+    } else {
+      mainBadge.innerText = 'POWER OUTAGE: BATTERY ACTIVE ⚠';
+      mainBadge.className = 'badge-alert';
+    }
+  } catch(e) {
+    console.error("Power telemetry error:", e);
+  }
+}
+
+async function triggerPowerAnomaly(type) {
+  try {
+    await fetch('/api/demo/anomaly', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: type })
+    });
+    fetchPowerTelemetry();
+  } catch(e) {}
+}
+
+async function setPowerMode(mode) {
+  if (mode === 'solar_normal') {
+    await triggerPowerAnomaly('normal');
+  } else if (mode === 'battery_eco') {
+    alert("Eco Power Saver mode activated: Compressor modulated for extended backup up to 8.5 hours.");
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchPowerTelemetry();
+  setInterval(fetchPowerTelemetry, 3000);
+});
+</script>
+{% endblock %}

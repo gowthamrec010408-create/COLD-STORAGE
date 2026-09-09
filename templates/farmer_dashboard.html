@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block title %}Farmer Dashboard — QORA TECH Solar Smart Cold Storage{% endblock %}
+
+{% block content %}
+
+<!-- Farmer Top Greeting Banner -->
+<div class="farmer-hero-bar">
+  <div>
+    <h2 class="farmer-name-tag">Welcome, <span id="farmerNameDisplay">{{ user.name }}</span></h2>
+    <div class="farmer-location-tag">
+      📍 <span id="farmerVillageDisplay">{{ user.village }}</span>, 
+      <span id="farmerDistrictDisplay">{{ user.district }}</span> ({{ user.state }}) • Storage Unit: <strong>{{ user.storage_id }}</strong>
+    </div>
+  </div>
+  <div style="text-align: right;">
+    <!-- Account Plan Badge -->
+    {% if user.account_type == 'RENTAL' %}
+      <div style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; padding: 4px 12px; border-radius: 14px; font-weight: 700; font-size: 0.85rem; display: inline-block; margin-bottom: 4px;">
+        📦 Plan: RENTAL (₹{{ user.rental_details.monthly_price if user.rental_details else 5000 }} / month)
+      </div>
+      <div style="font-size: 0.78rem; color: var(--text-muted);">
+        Active until: {{ user.rental_details.end_date if user.rental_details else '2026-12-31' }}
+      </div>
+    {% else %}
+      <div style="background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7; padding: 4px 12px; border-radius: 14px; font-weight: 700; font-size: 0.85rem; display: inline-block; margin-bottom: 4px;">
+        🏢 Plan: PURCHASED UNIT
+      </div>
+      <div style="font-size: 0.78rem; color: var(--text-muted);">
+        Warranty: {{ user.purchase_details.warranty if user.purchase_details else '5 Years System' }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Active Alert Banner (Dynamic) -->
+<div id="alertBanner" class="alert-banner" style="display: none;">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span id="alertIcon" style="font-size: 1.5rem;">⚠</span>
+    <div>
+      <strong id="alertTitle">System Alert</strong>
+      <div id="alertMessage" style="font-size: 0.88rem;">--</div>
+    </div>
+  </div>
+  <span id="alertTime" style="font-size: 0.8rem; font-weight: 700;">Just now</span>
+</div>
+
+<!-- 4 TOP KPI GLANCE CARDS -->
+<div class="kpi-glance-grid">
+  <!-- Solar Power Card -->
+  <div class="kpi-card kpi-solar">
+    <div class="kpi-label">
+      <span>Solar Power</span>
+      <span>☀</span>
+    </div>
+    <div class="kpi-number" id="kpiSolarPower">2.4 <span style="font-size: 1.2rem; font-weight: 500;">kW</span></div>
+    <div class="kpi-subtext" id="kpiSolarSubtext">Voltage: 76.4 V • 31.4 A</div>
+  </div>
+
+  <!-- Battery Card -->
+  <div class="kpi-card kpi-battery">
+    <div class="kpi-label">
+      <span>Battery Level</span>
+      <span>🔋</span>
+    </div>
+    <div class="kpi-number" id="kpiBatterySOC">82 <span style="font-size: 1.2rem; font-weight: 500;">%</span></div>
+    <div class="kpi-subtext" id="kpiBatterySubtext">Backup: 4 h 25 min</div>
+  </div>
+
+  <!-- System Health Card -->
+  <div class="kpi-card kpi-system">
+    <div class="kpi-label">
+      <span>System Status</span>
+      <span>🛡</span>
+    </div>
+    <div class="kpi-number" id="kpiSystemStatus" style="font-size: 1.8rem; color: #059669;">NORMAL</div>
+    <div class="kpi-subtext" id="kpiSystemSubtext">All Sensors Online</div>
+  </div>
+
+  <!-- Storage Mode Card -->
+  <div class="kpi-card kpi-mode">
+    <div class="kpi-label">
+      <span>Storage Mode</span>
+      <span>❄</span>
+    </div>
+    <div class="kpi-number" id="kpiStorageMode" style="font-size: 1.8rem; color: #7c3aed;">3 ZONE</div>
+    <div class="kpi-subtext">Flexible Multi-Chamber</div>
+  </div>
+</div>
+
+<!-- STORAGE MODE SELECTION SECTION -->
+<section class="storage-mode-section">
+  <div class="storage-mode-header-box">
+    <div class="mode-text-content">
+      <div class="mode-badge-title">
+        <span class="mode-icon-box">📦</span>
+        <div>
+          <h3 class="mode-title-text">Cold Storage Operating Mode</h3>
+          <p class="mode-desc-text">
+            Choose between 3 dedicated temperature zones or a single unified cold storage room.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode Selector Buttons (Distinct & Prominent) -->
+    <div class="mode-button-group" role="group" aria-label="Storage Operating Mode">
+      <button type="button" class="mode-toggle-btn active" id="btnMode3Zone" onclick="switchStorageMode('THREE_ZONE')">
+        <span class="btn-icon">❄</span>
+        <div class="btn-text-wrap">
+          <span class="btn-main-title">3 ZONE MODE</span>
+          <span class="btn-sub-title">Multi-Chamber Independent</span>
+        </div>
+      </button>
+      <button type="button" class="mode-toggle-btn" id="btnMode1Zone" onclick="switchStorageMode('ONE_ZONE')">
+        <span class="btn-icon">🏢</span>
+        <div class="btn-text-wrap">
+          <span class="btn-main-title">1 ZONE MODE</span>
+          <span class="btn-sub-title">Unified Bulk Chamber</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3-ZONE MODE DISPLAY -->
+  <div id="threeZoneContainer" class="zones-grid">
+    
+    <!-- ZONE 1 CARD (2–8°C) -->
+    <div class="zone-card" id="zone1Card">
+      <div>
+        <div class="zone-header">
+          <div>
+            <span class="zone-pill-label">ZONE 1</span>
+            <h4 class="zone-title">Side Chamber 1</h4>
+            <span class="zone-compat-tag">Leafy / Pods / Green Peppers</span>
+          </div>
+          <span class="zone-range-tag">2–8°C</span>
+        </div>
+
+        <!-- Real Crop Photo -->
+        <div class="crop-photo-preview">
+          <img id="z1CropImg" src="{{ url_for('static', filename='images/crops/french_beans.jpg') }}" alt="French Beans">
+          <div class="crop-photo-overlay">
+            <div>
+              <span class="crop-photo-name" id="z1CropName">French Beans</span>
+              <div style="font-size: 0.75rem; color: #a7f3d0;" id="z1OptimalTempText">Optimal: 4–7.5°C</div>
+            </div>
+            <span class="badge-safe" id="z1ConditionBadge">SAFE</span>
+          </div>
+        </div>
+
+        <!-- Crop Allocation Section with Direct Action Buttons -->
+        <div class="crop-allocation-box">
+          <div class="allocation-label">
+            <span>Allocated Produce:</span>
+            <span class="allocation-count">2 Crops</span>
+          </div>
+          <div class="crop-pill-buttons">
+            <button type="button" class="crop-select-pill active" id="pill_z1_crop_french_beans" onclick="selectZoneCropBtn('zone1', 'crop_french_beans')">
+              🌱 French Beans
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z1_crop_capsicum" onclick="selectZoneCropBtn('zone1', 'crop_capsicum')">
+              🫑 Capsicum
+            </button>
+          </div>
+          <div style="margin-top: 6px;">
+            <select id="z1CropSelect" class="form-select-sm" onchange="updateZoneCrop('zone1', this.value)">
+              <option value="crop_french_beans" selected>French Beans (4–7.5°C)</option>
+              <option value="crop_capsicum">Capsicum / Bell Pepper (7–9°C)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4 Sensors -->
+        <div class="sensor-metrics-grid">
+          <div class="sensor-box">
+            <span class="sensor-box-label">Temperature</span>
+            <span class="sensor-box-val" id="z1Temp">5.2°C</span>
+            <span class="sensor-box-status" style="color: #059669;">Target: 5.0°C ✓</span>
+          </div>
+          <div class="sensor-box">
+            <span class="sensor-box-label">Humidity</span>
+            <span class="sensor-box-val" id="z1Humidity">91.0%</span>
+            <span class="sensor-box-status" style="color: #059669;">GOOD (90–95%)</span>
+          </div>
+          <div class="sensor-box">
+            <span class="sensor-box-label">Produce Weight</span>
+            <span class="sensor-box-val" id="z1Weight">84.5 kg</span>
+            <span class="sensor-box-status" style="color: var(--text-muted);">Load Cell Online</span>
+          </div>
+          <div class="sensor-box">
+            <span class="sensor-box-label">Ethylene Gas</span>
+            <span class="sensor-box-val" id="z1Ethylene">LOW</span>
+            <span class="sensor-box-status" style="color: #059669;">Fresh Produce ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actuators Strip -->
+      <div>
+        <div class="actuator-strip">
+          <span class="actuator-label">Solenoid Valve 1:</span>
+          <span class="actuator-val val-open" id="z1Solenoid">OPEN</span>
+        </div>
+        <div class="actuator-strip">
+          <span class="actuator-label">Cooling Status:</span>
+          <span class="actuator-val val-on" id="z1Cooling">ACTIVE</span>
+        </div>
+        <div class="actuator-strip">
+          <span class="actuator-label">Sensor Health:</span>
+          <span class="actuator-val" id="z1SensorHealth" style="color: #059669;">ONLINE ●</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZONE 2 CARD (CENTER CHAMBER 0–2°C) -->
+    <div class="zone-card center-chamber" id="zone2Card">
+      <div>
+        <div class="zone-header">
+          <div>
+            <span class="zone-pill-label" style="background: #0284c7; color: #ffffff;">ZONE 2 (CENTER)</span>
+            <h4 class="zone-title" style="color: #0369a1;">Main Refrigeration Hub</h4>
+            <span class="zone-compat-tag" style="color: #0284c7;">High Humidity Cold Chamber</span>
+          </div>
+          <span class="zone-range-tag" style="background: #0284c7; color: #ffffff;">0–2°C</span>
+        </div>
+
+        <!-- Real Crop Photo -->
+        <div class="crop-photo-preview" style="border: 2px solid #38bdf8;">
+          <img id="z2CropImg" src="{{ url_for('static', filename='images/crops/cabbage.jpg') }}" alt="Cabbage">
+          <div class="crop-photo-overlay">
+            <div>
+              <span class="crop-photo-name" id="z2CropName">Cabbage</span>
+              <div style="font-size: 0.75rem; color: #a7f3d0;" id="z2OptimalTempText">Optimal: 0–2°C</div>
+            </div>
+            <span class="badge-safe" id="z2ConditionBadge">SAFE</span>
+          </div>
+        </div>
+
+        <!-- Crop Allocation Section with Direct Action Buttons -->
+        <div class="crop-allocation-box">
+          <div class="allocation-label">
+            <span>Allocated Produce:</span>
+            <span class="allocation-count">4 Crops</span>
+          </div>
+          <div class="crop-pill-buttons">
+            <button type="button" class="crop-select-pill active" id="pill_z2_crop_cabbage" onclick="selectZoneCropBtn('zone2', 'crop_cabbage')">
+              🥬 Cabbage
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z2_crop_cauliflower" onclick="selectZoneCropBtn('zone2', 'crop_cauliflower')">
+              🥦 Cauliflower
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z2_crop_carrot" onclick="selectZoneCropBtn('zone2', 'crop_carrot')">
+              🥕 Carrot
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z2_crop_leafy_veg" onclick="selectZoneCropBtn('zone2', 'crop_leafy_veg')">
+              🌿 Lai Saag
+            </button>
+          </div>
+          <div style="margin-top: 6px;">
+            <select id="z2CropSelect" class="form-select-sm" onchange="updateZoneCrop('zone2', this.value)">
+              <option value="crop_cabbage" selected>Cabbage (0–2°C)</option>
+              <option value="crop_cauliflower">Cauliflower (0–2°C)</option>
+              <option value="crop_carrot">Carrot (0–2°C)</option>
+              <option value="crop_leafy_veg">Leafy Greens / Lai Saag (0–2°C)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4 Sensors -->
+        <div class="sensor-metrics-grid">
+          <div class="sensor-box" style="background: #ffffff;">
+            <span class="sensor-box-label">Temperature</span>
+            <span class="sensor-box-val" id="z2Temp" style="color: #0284c7;">1.2°C</span>
+            <span class="sensor-box-status" style="color: #059669;">Target: 1.0°C ✓</span>
+          </div>
+          <div class="sensor-box" style="background: #ffffff;">
+            <span class="sensor-box-label">Humidity</span>
+            <span class="sensor-box-val" id="z2Humidity">96.5%</span>
+            <span class="sensor-box-status" style="color: #059669;">OPTIMAL (95–98%)</span>
+          </div>
+          <div class="sensor-box" style="background: #ffffff;">
+            <span class="sensor-box-label">Produce Weight</span>
+            <span class="sensor-box-val" id="z2Weight">124.0 kg</span>
+            <span class="sensor-box-status" style="color: var(--text-muted);">Center Load Cell</span>
+          </div>
+          <div class="sensor-box" style="background: #ffffff;">
+            <span class="sensor-box-label">Ethylene Gas</span>
+            <span class="sensor-box-val" id="z2Ethylene">LOW</span>
+            <span class="sensor-box-status" style="color: #059669;">Clean Air ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actuators Strip -->
+      <div>
+        <div class="actuator-strip" style="background: #e0f2fe;">
+          <span class="actuator-label">AC Compressor:</span>
+          <span class="actuator-val val-on" id="z2AcStatus">ON</span>
+        </div>
+        <div class="actuator-strip" style="background: #e0f2fe;">
+          <span class="actuator-label">UV-C + TiO₂ System:</span>
+          <span class="actuator-val" id="z2UvcStatus" style="color: #7c3aed;">ACTIVE (Sanitizing)</span>
+        </div>
+        <div class="actuator-strip" style="background: #e0f2fe;">
+          <span class="actuator-label">Cooling Source:</span>
+          <span class="actuator-val" style="color: #0369a1;">Central AC Chiller</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZONE 3 CARD (8–15°C) -->
+    <div class="zone-card" id="zone3Card">
+      <div>
+        <div class="zone-header">
+          <div>
+            <span class="zone-pill-label">ZONE 3</span>
+            <h4 class="zone-title">Side Chamber 2</h4>
+            <span class="zone-compat-tag">Mild / Solanaceae & Spices</span>
+          </div>
+          <span class="zone-range-tag">8–15°C</span>
+        </div>
+
+        <!-- Real Crop Photo -->
+        <div class="crop-photo-preview">
+          <img id="z3CropImg" src="{{ url_for('static', filename='images/crops/tomato.jpg') }}" alt="Tomato">
+          <div class="crop-photo-overlay">
+            <div>
+              <span class="crop-photo-name" id="z3CropName">Tomato</span>
+              <div style="font-size: 0.75rem; color: #a7f3d0;" id="z3OptimalTempText">Optimal: 8–12°C</div>
+            </div>
+            <span class="badge-safe" id="z3ConditionBadge">SAFE</span>
+          </div>
+        </div>
+
+        <!-- Crop Allocation Section with Direct Action Buttons -->
+        <div class="crop-allocation-box">
+          <div class="allocation-label">
+            <span>Allocated Produce:</span>
+            <span class="allocation-count">6 Crops</span>
+          </div>
+          <div class="crop-pill-buttons">
+            <button type="button" class="crop-select-pill active" id="pill_z3_crop_tomato" onclick="selectZoneCropBtn('zone3', 'crop_tomato')">
+              🍅 Tomato
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z3_crop_green_chilli" onclick="selectZoneCropBtn('zone3', 'crop_green_chilli')">
+              🌶 Green Chilli
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z3_crop_potato" onclick="selectZoneCropBtn('zone3', 'crop_potato')">
+              🥔 Potato
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z3_crop_brinjal" onclick="selectZoneCropBtn('zone3', 'crop_brinjal')">
+              🍆 Brinjal
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z3_crop_ginger" onclick="selectZoneCropBtn('zone3', 'crop_ginger')">
+              🫚 Ginger
+            </button>
+            <button type="button" class="crop-select-pill" id="pill_z3_crop_bhut_jolokia" onclick="selectZoneCropBtn('zone3', 'crop_bhut_jolokia')">
+              🔥 Ghost Pepper
+            </button>
+          </div>
+          <div style="margin-top: 6px;">
+            <select id="z3CropSelect" class="form-select-sm" onchange="updateZoneCrop('zone3', this.value)">
+              <option value="crop_tomato" selected>Tomato (8–12°C)</option>
+              <option value="crop_green_chilli">Green Chilli (8–11°C)</option>
+              <option value="crop_potato">Potato (8–12°C)</option>
+              <option value="crop_brinjal">Brinjal / Eggplant (9–12.5°C)</option>
+              <option value="crop_ginger">Ginger (12–14°C)</option>
+              <option value="crop_bhut_jolokia">Bhut Jolokia / Ghost Pepper (8–11°C)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4 Sensors -->
+        <div class="sensor-metrics-grid">
+          <div class="sensor-box">
+            <span class="sensor-box-label">Temperature</span>
+            <span class="sensor-box-val" id="z3Temp">9.8°C</span>
+            <span class="sensor-box-status" id="z3TempStatus" style="color: #059669;">Target: 10.0°C ✓</span>
+          </div>
+          <div class="sensor-box">
+            <span class="sensor-box-label">Humidity</span>
+            <span class="sensor-box-val" id="z3Humidity">88.0%</span>
+            <span class="sensor-box-status" style="color: #059669;">GOOD (85–90%)</span>
+          </div>
+          <div class="sensor-box">
+            <span class="sensor-box-label">Produce Weight</span>
+            <span class="sensor-box-val" id="z3Weight">98.0 kg</span>
+            <span class="sensor-box-status" style="color: var(--text-muted);">Load Cell Online</span>
+          </div>
+          <div class="sensor-box">
+            <span class="sensor-box-label">Ethylene Gas</span>
+            <span class="sensor-box-val" id="z3Ethylene">LOW</span>
+            <span class="sensor-box-status" style="color: #059669;">Safe Range ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actuators Strip -->
+      <div>
+        <div class="actuator-strip">
+          <span class="actuator-label">Solenoid Valve 2:</span>
+          <span class="actuator-val val-closed" id="z3Solenoid">CLOSED</span>
+        </div>
+        <div class="actuator-strip">
+          <span class="actuator-label">Cooling Status:</span>
+          <span class="actuator-val val-off" id="z3Cooling">STOPPED</span>
+        </div>
+        <div class="actuator-strip">
+          <span class="actuator-label">Sensor Health:</span>
+          <span class="actuator-val" id="z3SensorHealth" style="color: #059669;">ONLINE ●</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 1-ZONE MODE DISPLAY -->
+  <div id="singleZoneContainer" class="single-zone-container" style="display: none;">
+    <div class="single-zone-hero">
+      <div>
+        <div class="crop-photo-preview" style="height: 220px;">
+          <img id="singleCropImg" src="{{ url_for('static', filename='images/crops/cabbage.jpg') }}" alt="Selected Crop">
+          <div class="crop-photo-overlay">
+            <div>
+              <span class="crop-photo-name" id="singleCropName">Cabbage</span>
+              <div style="font-size: 0.8rem; color: #a7f3d0;" id="singleOptimalTemp">Recommended: 0–2°C</div>
+            </div>
+            <span class="badge-safe" id="singleConditionBadge">SAFE</span>
+          </div>
+        </div>
+        <div style="margin-top: 1rem;">
+          <label class="form-label" for="singleCropSelect">Select Stored Crop for Entire Room:</label>
+          <select id="singleCropSelect" class="form-select" onchange="updateSingleZoneCrop(this.value)">
+            {% for crop in crops %}
+              <option value="{{ crop.name }}" data-img="{{ url_for('static', filename=crop.image_url.replace('static/', '')) }}" data-temp="{{ crop.optimal_temp }}" data-range="{{ crop.min_temp }}–{{ crop.max_temp }}°C" data-id="{{ crop.id }}">
+                {{ crop.name }} (Recommended: {{ crop.min_temp }}–{{ crop.max_temp }}°C)
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="margin-top: 1rem;">
+          <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Quick Allocate Produce:</label>
+          <div class="single-zone-crop-grid">
+            {% for crop in crops %}
+              <button type="button" class="single-crop-pill {% if loop.first %}active{% endif %}" id="single_pill_{{ crop.id }}" onclick="selectSingleZoneCropBtn('{{ crop.name }}', '{{ crop.id }}', '{{ url_for('static', filename=crop.image_url.replace('static/', '')) }}', '{{ crop.optimal_temp }}', '{{ crop.min_temp }}–{{ crop.max_temp }}°C')">
+                <span>{{ crop.name }}</span>
+                <span class="crop-temp-badge">{{ crop.min_temp }}–{{ crop.max_temp }}°C</span>
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <h4 style="font-size: 1.5rem; color: #064e3b;">SINGLE STORAGE CHAMBER</h4>
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Entire Cold Room Configured for One Uniform Crop</span>
+          </div>
+          <span class="badge-safe" style="font-size: 1rem; padding: 6px 14px;">STORAGE: SAFE</span>
+        </div>
+
+        <div class="sensor-metrics-grid" style="grid-template-columns: repeat(2, 1fr); gap: 14px;">
+          <div class="sensor-box" style="padding: 14px;">
+            <span class="sensor-box-label">Current Temperature</span>
+            <span class="sensor-box-val" id="singleTemp" style="font-size: 2rem; color: #0284c7;">1.5°C</span>
+            <span class="sensor-box-status" style="color: #059669;">Safe Range: 0.0–2.0°C</span>
+          </div>
+          <div class="sensor-box" style="padding: 14px;">
+            <span class="sensor-box-label">Target Temperature</span>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+              <span class="sensor-box-val" id="singleTargetVal" style="font-size: 2rem;">1.5°C</span>
+            </div>
+            <span class="sensor-box-status" style="color: var(--text-muted);">Deadband Hysteresis: ±0.8°C</span>
+          </div>
+          <div class="sensor-box" style="padding: 14px;">
+            <span class="sensor-box-label">Total Produce Weight</span>
+            <span class="sensor-box-val" id="singleWeight" style="font-size: 2rem;">306.5 kg</span>
+            <span class="sensor-box-status" style="color: var(--text-muted);">Multi-Load Cell Array</span>
+          </div>
+          <div class="sensor-box" style="padding: 14px;">
+            <span class="sensor-box-label">Room Humidity</span>
+            <span class="sensor-box-val" id="singleHumidity" style="font-size: 2rem;">96.0%</span>
+            <span class="sensor-box-status" style="color: #059669;">OPTIMAL (95–98%)</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem;">
+          <div class="actuator-strip" style="padding: 10px 14px;">
+            <span class="actuator-label">Cooling Unit:</span>
+            <span class="actuator-val val-on" id="singleAcStatus">COOLING (Compressor ON)</span>
+          </div>
+          <div class="actuator-strip" style="padding: 10px 14px;">
+            <span class="actuator-label">UV-C Air Sanitation:</span>
+            <span class="actuator-val" style="color: #7c3aed;">ACTIVE (Treatment ON)</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COOLING ARCHITECTURE VISUAL FLOW DIAGRAM -->
+<section class="cooling-architecture-box">
+  <div class="cooling-flow-header">
+    <h3 class="cooling-flow-title">
+      <span>❄ Smart Cooling Distribution Architecture</span>
+    </h3>
+    <div class="cooling-direction-badge" id="coolingFlowBadge">
+      Cooling Destination: ZONE 1
+    </div>
+  </div>
+
+  <div class="cooling-diagram">
+    <!-- Top Cooling AC Unit -->
+    <div class="cooling-node-ac">
+      <div>AC / CENTRAL REFRIGERATION UNIT</div>
+      <div style="font-size: 0.8rem; font-weight: 500; opacity: 0.9;" id="diagAcStatus">Status: ON (1.25 kW Load)</div>
+    </div>
+
+    <div class="cooling-pipe-vertical active" id="pipeAcToCenter"></div>
+
+    <!-- Center Chamber Zone 2 -->
+    <div class="cooling-node-center">
+      <div style="font-weight: 800; color: #38bdf8;">ZONE 2 — CENTER CHAMBER</div>
+      <div style="font-size: 0.88rem;">Temperature: <strong id="diagZ2Temp">1.2°C</strong> (0–2°C)</div>
+      <div style="font-size: 0.75rem; color: #a7f3d0; margin-top: 2px;">UV-C + TiO₂ Photocatalytic Sanitation</div>
+    </div>
+
+    <!-- Branches to Solenoids -->
+    <div class="cooling-branches">
+      <!-- Solenoid 1 Branch (Left to Zone 1) -->
+      <div class="cooling-branch-item">
+        <div style="font-size: 0.85rem; color: #94a3b8;">↙ Solenoid Valve 1</div>
+        <div class="valve-node open" id="diagValve1">SOLENOID 1: OPEN</div>
+        <div class="cooling-pipe-vertical active" id="pipeValve1"></div>
+        <div class="cooling-target-node">
+          <div style="color: #34d399;">ZONE 1</div>
+          <div style="font-size: 0.8rem;">2–8°C (<span id="diagZ1Temp">5.2°C</span>)</div>
+        </div>
+      </div>
+
+      <!-- Solenoid 2 Branch (Right to Zone 3) -->
+      <div class="cooling-branch-item">
+        <div style="font-size: 0.85rem; color: #94a3b8;">Solenoid Valve 2 ↘</div>
+        <div class="valve-node" id="diagValve2">SOLENOID 2: CLOSED</div>
+        <div class="cooling-pipe-vertical" id="pipeValve2" style="background: #475569;"></div>
+        <div class="cooling-target-node">
+          <div style="color: #fde047;">ZONE 3</div>
+          <div style="font-size: 0.8rem;">8–15°C (<span id="diagZ3Temp">9.8°C</span>)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLAR POWER & BATTERY ESTIMATED RUNTIME DASHBOARD -->
+<section class="solar-battery-section">
+  <div class="solar-header">
+    <div>
+      <h3 style="font-size: 1.35rem; color: #064e3b; display: flex; align-items: center; gap: 8px;">
+        <span>⚡ Smart Solar Generation & Battery Management</span>
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        Real-time solar irradiation conversion, 48V LiFePO4 battery dynamics, and runtime calculations.
+      </p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="{{ url_for('power_page') }}" class="btn-primary-farmer" style="padding: 8px 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+        ⚡ Detailed Power Hub →
+      </a>
+      <div id="powerStatusBadge" class="badge-safe" style="font-size: 0.95rem; padding: 6px 14px;">
+        POWER STATUS: ✓ NORMAL
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Power Flow Banner -->
+  <div class="solar-power-flow-banner" id="powerFlowBanner">
+    <span>⚡ Power Flow:</span>
+    <span id="powerDirectionText" style="color: #047857; font-size: 1.15rem;">
+      SOLAR → LOAD + BATTERY
+    </span>
+  </div>
+
+  <!-- Quick Interactive Power Mode Controls -->
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.25rem;">
+    <button type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.82rem; font-weight: 700; color: #b45309; border-color: #fcd34d;" onclick="triggerAnomaly('normal')">
+      ☀ Solar Priority (2.4 kW)
+    </button>
+    <button type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.82rem; font-weight: 700; color: #047857; border-color: #86efac;" onclick="alert('Eco Power Saving Mode active: modulating chiller compressor duty cycle for up to 8.5h backup.')">
+      🔋 Eco Power Mode
+    </button>
+    <button type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.82rem; font-weight: 700; color: #dc2626; border-color: #fca5a5;" onclick="triggerAnomaly('power_fail')">
+      ⚠ Simulate Solar Cut / Power Failure
+    </button>
+    <button type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.82rem; font-weight: 700; color: #059669; border-color: #6ee7b7;" onclick="triggerAnomaly('normal')">
+      ✓ Restore Normal Grid
+    </button>
+  </div>
+
+  <div class="power-cards-grid">
+    <!-- Solar Card -->
+    <div class="power-stat-card solar-highlight">
+      <div style="display: flex; justify-content: space-between; font-weight: 700; color: #d97706;">
+        <span>SOLAR PV ARRAY</span>
+        <span>2.4 kW Rated</span>
+      </div>
+      <div class="metric-value" style="font-size: 2.2rem; color: #b45309; margin: 6px 0;" id="solarKwpDisplay">
+        2.40 <span style="font-size: 1.1rem;">kW</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Solar Voltage: <strong id="solarVoltageVal">76.4 V</strong> • Current: <strong id="solarCurrentVal">31.4 A</strong>
+      </div>
+      <div style="margin-top: 8px; font-size: 0.8rem; color: #059669; font-weight: 600;">
+        Estimated Charging to 100%: <strong id="chargingTimeText">1 h 10 min</strong>
+      </div>
+    </div>
+
+    <!-- Battery Runtime Card -->
+    <div class="power-stat-card battery-highlight">
+      <div style="display: flex; justify-content: space-between; font-weight: 700; color: #059669;">
+        <span>BATTERY BACKUP</span>
+        <span id="batterySocSmall">82%</span>
+      </div>
+      <div class="backup-time-display" id="estimatedBackupTime">
+        4 h 25 min
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+        Battery Available: <strong id="batteryAvailableKwh">7.2 kWh</strong> (10 kWh Pack)
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+        Battery Voltage: <strong id="batteryVoltageVal">51.8 V</strong> (48V LiFePO4)
+      </div>
+    </div>
+
+    <!-- Cold Storage Load Card -->
+    <div class="power-stat-card load-highlight">
+      <div style="display: flex; justify-content: space-between; font-weight: 700; color: #0284c7;">
+        <span>SYSTEM POWER LOAD</span>
+        <span>Cold Unit</span>
+      </div>
+      <div class="metric-value" style="font-size: 2.2rem; color: #0369a1; margin: 6px 0;" id="currentLoadVal">
+        1.25 <span style="font-size: 1.1rem;">kW</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        AC Compressor & Circulation Fans
+      </div>
+      <div style="margin-top: 8px; font-size: 0.8rem; color: #0284c7; font-weight: 600;">
+        Power Source: <strong id="powerSourceVal">SOLAR</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ADMIN CROP RECOMMENDATION FOR THIS FARMER -->
+{% if recommendations %}
+<section class="recommendation-section">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <h3 style="font-size: 1.35rem; color: #064e3b; display: flex; align-items: center; gap: 8px;">
+      <span>💡 Recommended by Agronomy Officer</span>
+    </h3>
+    <span class="badge-safe">Targeted for Your Unit</span>
+  </div>
+
+  <div class="rec-card-hero">
+    <img src="{{ url_for('static', filename=recommendations[0].crop_image.replace('static/', '')) }}" class="rec-crop-img" alt="{{ recommendations[0].crop_name }}">
+    <div class="rec-content">
+      <div>
+        <span class="rec-badge-new">NEW ADVISORY</span>
+        <h4 style="font-size: 1.3rem; color: #0f172a; margin-bottom: 4px;">{{ recommendations[0].crop_name }}</h4>
+        <div style="font-size: 0.88rem; color: #065f46; font-weight: 700; margin-bottom: 6px;">
+          Recommended Storage: {{ recommendations[0].recommended_zone }} ({{ recommendations[0].target_temp }} • {{ recommendations[0].target_humidity }} RH)
+        </div>
+        <p style="font-size: 0.92rem; color: #334155; line-height: 1.4;">
+          "{{ recommendations[0].message }}"
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+        <span style="font-size: 0.78rem; color: var(--text-muted);">Sent by {{ recommendations[0].admin_name }} • {{ recommendations[0].created_at }}</span>
+        <a href="{{ url_for('crops_catalog') }}" class="btn-primary-farmer" style="padding: 8px 16px; font-size: 0.88rem;">
+          View Crop Details →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- UV-C & SANITATION TREATMENT STATUS -->
+<section style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+  <div style="display: flex; align-items: center; gap: 14px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: #f3e8ff; color: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+      ✨
+    </div>
+    <div>
+      <h4 style="font-size: 1.15rem; color: #4c1d95;">UV-C + TiO₂ Photocatalytic Microbial System</h4>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Status: <strong style="color: #059669;" id="uvcTextStatus">ACTIVE</strong> • Last Treatment: <strong id="uvcLastTreatment">12:15 PM</strong>
+      </div>
+    </div>
+  </div>
+  <div class="badge-safe" style="background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; font-size: 0.88rem; padding: 6px 14px;">
+    Microbial Sanitization: ACTIVE
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/farmer_dashboard.js') }}"></script>
+{% endblock %}

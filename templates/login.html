@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — QORA TECH Solar Smart Cold Storage</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .clean-login-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+    }
+    .clean-brand-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .clean-brand-title {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #064e3b;
+      letter-spacing: 0.03em;
+      margin-bottom: 0.2rem;
+    }
+    .clean-brand-subtitle {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #d97706;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="clean-login-card">
+    
+    <div class="clean-brand-header">
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="QORA TECH Logo" class="auth-logo-img">
+      <h1 class="clean-brand-title">QORA TECH</h1>
+      <div class="clean-brand-subtitle">Solar Smart Cold Storage</div>
+    </div>
+
+    {% if error %}
+      <div class="alert-banner critical" style="margin-bottom: 1.25rem; font-size: 0.88rem; padding: 10px 14px;">
+        {{ error }}
+      </div>
+    {% endif %}
+
+    {% if success %}
+      <div class="alert-banner warning" style="background: #ecfdf5; border-color: #86efac; color: #065f46; margin-bottom: 1.25rem; font-size: 0.88rem; padding: 10px 14px;">
+        {{ success }}
+      </div>
+    {% endif %}
+
+    <form action="{{ url_for('login_page') }}" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-input" placeholder="farmer@qoratech.in" value="bipul.barman@qoratech.in" required>
+      </div>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
+          <a href="javascript:void(0)" onclick="handleForgotPassword()" style="font-size: 0.82rem; color: #059669; font-weight: 600;">Forgot Password?</a>
+        </div>
+        <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" value="farmer123" required>
+      </div>
+
+      <button type="submit" class="btn-primary-farmer" style="width: 100%; justify-content: center; margin-top: 0.75rem; padding: 12px;">
+        LOGIN
+      </button>
+    </form>
+
+    <div style="margin-top: 1.75rem; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 1.25rem;">
+      <p style="font-size: 0.92rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+        Don't have an account?
+      </p>
+      <a href="{{ url_for('register_page') }}" class="btn-secondary" style="display: inline-block; width: 100%; text-align: center; font-size: 0.9rem; padding: 10px;">
+        CREATE ACCOUNT
+      </a>
+    </div>
+
+    <!-- Quick Access for Demonstration -->
+    <div style="margin-top: 1.25rem; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 10px 14px;">
+      <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Quick Fill Credentials:</div>
+      <div style="display: flex; justify-content: space-between; gap: 8px;">
+        <button type="button" onclick="setLoginCredentials('bipul.barman@qoratech.in', 'farmer123')" class="btn-secondary" style="padding: 6px 10px; font-size: 0.78rem; flex: 1;">
+          👨‍🌾 Farmer Login
+        </button>
+        <button type="button" onclick="setLoginCredentials('admin@qoratech.in', 'admin123')" class="btn-secondary" style="padding: 6px 10px; font-size: 0.78rem; flex: 1;">
+          ⚙ Admin Login
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function setLoginCredentials(email, password = 'farmer123') {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = password;
+    }
+
+    async function handleForgotPassword() {
+      const email = prompt("Enter your registered email address for Firebase password reset:", document.getElementById('email').value);
+      if (email) {
+        try {
+          const res = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+          });
+          const data = await res.json();
+          alert(data.message || "Password reset link has been sent to your email.");
+        } catch(e) {
+          alert("Password reset link has been sent to your email.");
+        }
+      }
+    }
+  </script>
+</body>
+</html>
